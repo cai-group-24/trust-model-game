@@ -98,7 +98,9 @@ class BaselineAgent(ArtificialBrain):
         # Process messages from team members
         self._process_messages(state, self._team_members, self._condition)
         # Initialize and update trust beliefs for team members
+        # TODO use values in this dictionary for decision making
         trustBeliefs = self._loadBelief(self._team_members, self._folder)
+        # TODO call _trustBelief function after certain actions to update trust beliefs
         self._trustBelief(self._team_members, trustBeliefs, self._folder, self._received_messages)
 
         # Check whether human is close in distance
@@ -904,6 +906,7 @@ class BaselineAgent(ArtificialBrain):
                                                    '14']:
                 self._human_loc = int(mssgs[-1].split()[-1])
 
+    # TODO update loading if implementations of competence and willingness change
     def _loadBelief(self, members, folder):
         '''
         Loads trust belief values if agent already collaborated with human before, otherwise trust belief values are initialized using default values.
@@ -934,10 +937,15 @@ class BaselineAgent(ArtificialBrain):
                     trustBeliefs[self._human_name] = {'competence': competence, 'willingness': willingness}
         return trustBeliefs
 
+    # TODO change implementation of willingness
+    # TODO change implementation of competence
+    # TODO change updating of willingness based on messages
+    # TODO change updating of competence based on messages
     def _trustBelief(self, members, trustBeliefs, folder, receivedMessages):
-        '''
+        """
         Baseline implementation of a trust belief. Creates a dictionary with trust belief scores for each team member, for example based on the received messages.
-        '''
+        Also saves updated current beliefs to csv file.
+        """
         # Update the trust value based on for example the received messages
         for message in receivedMessages:
             # Increase agent trust in a team member that rescued a victim
