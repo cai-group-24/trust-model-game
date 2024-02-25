@@ -801,7 +801,7 @@ class BaselineAgent(ArtificialBrain):
         '''
         # Update the trust value based on for example the received messages
         for message in receivedMessages:
-            # Increase agent trust in a team member that rescued a victim
+            # Increase agent trust in a team member that communicates they will rescue a victim
             if 'Collect' in message:
                trustBeliefs[self._humanName].increment_willingness(0.4)
             # Increase agent trust in a team member that communicates they found a victim
