@@ -40,7 +40,7 @@ class Phase(enum.Enum):
     ENTER_ROOM = 19
 
 class BaselineAgent(ArtificialBrain):
-    def __init__(self, slowdown, condition, name, folder):
+    def __init__(self, slowdown, condition, name, folder, trust_mechanism):
         super().__init__(slowdown, condition, name, folder)
         # Initialization of some relevant variables
         self._slowdown = slowdown
@@ -74,7 +74,7 @@ class BaselineAgent(ArtificialBrain):
         self._receivedMessages = []
         self._moving = False
         ###Change this depending on what mechanism you want to use.
-        self._trustMechanism = TrustMechanism.NEVER_TRUST
+        self._trustMechanism = trust_mechanism
 
     def initialize(self):
         # Initialization of the state tracker and navigation algorithm
@@ -697,8 +697,12 @@ class BaselineAgent(ArtificialBrain):
                 if mssg.from_id == member:
                     receivedMessages[member].append(mssg.content)
         # Check the content of the received messages
-        for mssgs in receivedMessages.values():
+        for name, mssgs in receivedMessages.items():
             for msg in mssgs:
+                ## If we don't  trust the person at all, dismiss all their messages as bogus
+                if trustBeliefs[name].willingness == -1:
+                    continue
+
                 # If a received message involves team members searching areas, add these areas to the memory of areas that have been explored
                 if msg.startswith("Search:"):
                     area = 'area ' + msg.split()[-1]
@@ -804,7 +808,7 @@ class BaselineAgent(ArtificialBrain):
                 if trustfile_header==[]:
                     trustfile_header=row
                     continue
-                # Retrieve trust values 
+                # Retrieve trust values, only do this if we are running our implementation and not the baselines
                 if row and row[0]==self._humanName:
                     name = row[0]
                     competence = float(row[1])
@@ -828,6 +832,9 @@ class BaselineAgent(ArtificialBrain):
         '''
         Baseline implementation of a trust belief. Creates a dictionary with trust belief scores for each team member, for example based on the received messages.
         '''
+        ## If we are running one of the baselines, we never want to update our trust values
+        if self._trustMechanism != TrustMechanism.CUSTOM_TRUST:
+            return
         # Update the trust value based on for example the received messages
         for message in receivedMessages:
             # Increase agent trust in a team member that communicates they will rescue a victim
