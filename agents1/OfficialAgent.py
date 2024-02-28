@@ -1,5 +1,6 @@
 import csv
 import enum
+import random
 
 from matrx import utils
 from matrx.actions.object_actions import RemoveObject
@@ -12,7 +13,11 @@ from actions1.CustomActions import CarryObject, Drop
 from beliefs.TrustBelief import TrustBelief
 from brains1.ArtificialBrain import ArtificialBrain
 
-
+class TrustMechanism(enum.Enum):
+    NEVER_TRUST = 1,
+    ALWAYS_TRUST = 2,
+    RANDOM_TRUST = 3,
+    CUSTOM_TRUST = 4
 class Phase(enum.Enum):
     INTRO = 1,
     FIND_NEXT_GOAL = 2,
@@ -68,6 +73,8 @@ class BaselineAgent(ArtificialBrain):
         self._recentVic = None
         self._receivedMessages = []
         self._moving = False
+        ###Change this depending on what mechanism you want to use.
+        self._trustMechanism = TrustMechanism.NEVER_TRUST
 
     def initialize(self):
         # Initialization of the state tracker and navigation algorithm
@@ -91,9 +98,17 @@ class BaselineAgent(ArtificialBrain):
                     self._receivedMessages.append(mssg.content)
         # Process messages from team members
         self._processMessages(state, self._teamMembers, self._condition)
+
         # Initialize and update trust beliefs for team members
         trustBeliefs = self._loadBelief(self._teamMembers, self._folder)
         self._trustBelief(self._teamMembers, trustBeliefs, self._folder, self._receivedMessages)
+
+        #Initialize and update turst beliefs for team members, never-trust
+
+        #Initialize and update trust beliefs for team members, always-trust
+
+        #Initialize and update trust beliefs for team members, random-trust
+
 
         # Check whether human is close in distance
         if state[{'is_human_agent': True}]:
@@ -689,6 +704,7 @@ class BaselineAgent(ArtificialBrain):
                     area = 'area ' + msg.split()[-1]
                     if area not in self._searchedRooms:
                         self._searchedRooms.append(area)
+
                 # If a received message involves team members finding victims, add these victims and their locations to memory
                 if msg.startswith("Found:"):
                     # Identify which victim and area it concerns
@@ -712,6 +728,7 @@ class BaselineAgent(ArtificialBrain):
                     # Add the found victim to the to do list when the human's condition is not 'weak'
                     if 'mild' in foundVic and condition!='weak':
                         self._todo.append(foundVic)
+
                 # If a received message involves team members rescuing victims, add these victims and their locations to memory
                 if msg.startswith('Collect:'):
                     # Identify which victim and area it concerns
@@ -790,6 +807,13 @@ class BaselineAgent(ArtificialBrain):
                     trustBeliefs[name] = TrustBelief(competence, willingness)
                 # Initialize default trust values
                 if row and row[0] != self._humanName:
+                    if self._trustMechanism == TrustMechanism.NEVER_TRUST:
+                        default = -1
+                    elif self._trustMechanism == TrustMechanism.ALWAYS_TRUST:
+                        default = 1
+                    elif self._trustMechanism == TrustMechanism.RANDOM_TRUST:
+                        default = random.uniform(-1, 1, 5)
+
                     competence = default
                     willingness = default
                     trustBeliefs[self._humanName] = TrustBelief(competence, willingness)
