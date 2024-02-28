@@ -102,14 +102,7 @@ class BaselineAgent(ArtificialBrain):
         self._trustBelief(self._teamMembers, trustBeliefs, self._folder, self._receivedMessages)
 
         # Process messages from team members
-        self._processMessages(state, self._teamMembers, self._condition, trustBeliefs)
-
-        #Initialize and update trust beliefs for team members, never-trust
-
-        #Initialize and update trust beliefs for team members, always-trust
-
-        #Initialize and update trust beliefs for team members, random-trust
-
+        self._processMessages(state,  self._teamMembers, self._condition, trustBeliefs)
 
         # Check whether human is close in distance
         if state[{'is_human_agent': True}]:
@@ -400,15 +393,15 @@ class BaselineAgent(ArtificialBrain):
                             # Add area to the to do list
                             self._tosearch.append(self._door['room_name'])
                             self._phase = Phase.FIND_NEXT_GOAL
-                        # Remove the obstacle alone if the human decides so
-                        if self.received_messages_content and self.received_messages_content[-1] == 'Remove alone' and not self._remove:
+                        # Remove the obstacle alone if the human decides so OR if the human has weak competence or willingness
+                        if self.received_messages_content and self.received_messages_content[-1] == 'Remove alone' and not self._remove or (self.received_messages_content and self.received_messages_content[-1] == 'Remove together' and (trustBeliefs[self._humanName].competence < 0 or trustBeliefs[self._humanName].willingness < 0)):
                             self._answered = True
                             self._waiting = False
                             self._sendMessage('Removing stones blocking ' + str(self._door['room_name']) + '.','RescueBot')
                             self._phase = Phase.ENTER_ROOM
                             self._remove = False
                             return RemoveObject.__name__, {'object_id': info['obj_id']}
-                        # Remove the obstacle together if the human decides so
+                        # Remove the obstacle together if the human decides so.
                         if self.received_messages_content and self.received_messages_content[-1] == 'Remove together' or self._remove:
                             if not self._remove:
                                 self._answered = True
@@ -684,7 +677,7 @@ class BaselineAgent(ArtificialBrain):
                 zones.append(place)
         return zones
 
-    def _processMessages(self, state, teamMembers, condition, trustBeliefs):
+    def _processMessages(self, state, teamMembers, condition, trustBeliefs = None):
         '''
         process incoming messages received from the team members
         '''
@@ -783,6 +776,7 @@ class BaselineAgent(ArtificialBrain):
                     else:
                         area = 'area ' + msg.split()[-1]
                         self._sendMessage('Will come to ' + area + ' after dropping ' + self._goalVic + '.','RescueBot')
+
             # Store the current location of the human in memory
             if mssgs and mssgs[-1].split()[-1] in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
                 self._humanLoc = int(mssgs[-1].split()[-1])
