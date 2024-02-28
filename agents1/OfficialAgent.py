@@ -1,6 +1,7 @@
 import csv
 import enum
 import random
+import time
 
 from matrx import utils
 from matrx.actions.object_actions import RemoveObject
@@ -12,6 +13,9 @@ from actions1.CustomActions import *
 from actions1.CustomActions import CarryObject, Drop
 from beliefs.TrustBelief import TrustBelief
 from brains1.ArtificialBrain import ArtificialBrain
+
+## Time the human has to respond before the robot starts another task
+RESPONSE_TIME = 5
 
 class TrustMechanism(enum.Enum):
     NEVER_TRUST = 1,
@@ -73,8 +77,8 @@ class BaselineAgent(ArtificialBrain):
         self._recentVic = None
         self._receivedMessages = []
         self._moving = False
-        ###Change this depending on what mechanism you want to use.
         self._trustMechanism = trust_mechanism
+        self._responseTime = None
 
     def initialize(self):
         # Initialization of the state tracker and navigation algorithm
@@ -324,7 +328,8 @@ class BaselineAgent(ArtificialBrain):
                             self._sendMessage('Found rock blocking ' + str(self._door['room_name']) + '. Please decide whether to "Remove" or "Continue" searching. \n \n \
                                 Important features to consider are: \n safe - victims rescued: ' + str(self._collectedVictims) + ' \n explore - areas searched: area ' + str(self._searchedRooms).replace('area ','') + ' \
                                 \n clock - removal time: 5 seconds \n afstand - distance between us: ' + self._distanceHuman ,'RescueBot')
-                            self._waiting = True                          
+                            self._waiting = True
+                            self.update_responseTime()
                         # Determine the next area to explore if the human tells the agent not to remove the obstacle
                         if self.received_messages_content and self.received_messages_content[-1] == 'Continue' and not self._remove:
                             self._answered = True
@@ -344,7 +349,13 @@ class BaselineAgent(ArtificialBrain):
                             if state[{'is_human_agent': True}]:
                                 self._sendMessage('Lets remove rock blocking ' + str(self._door['room_name']) + '!','RescueBot')
                                 return None, {}
-                        # Remain idle untill the human communicates what to do with the identified obstacle 
+                        # If the robot waited too long then will proceed on its own
+                        if self._waiting and self.check_exceeded_responseTime():
+                            self._waiting = False
+                            # Add area to the to do list
+                            self._tosearch.append(self._door['room_name'])
+                            self._phase = Phase.FIND_NEXT_GOAL
+                        # Remain idle untill the human communicates what to do with the identified obstacle
                         else:
                             return None, {}
 
@@ -356,6 +367,7 @@ class BaselineAgent(ArtificialBrain):
                                 Important features to consider are: \n safe - victims rescued: ' + str(self._collectedVictims) + '\n explore - areas searched: area ' + str(self._searchedRooms).replace('area ','') + ' \
                                 \n clock - removal time: 10 seconds','RescueBot')
                             self._waiting = True
+                            self.update_responseTime()
                         # Determine the next area to explore if the human tells the agent not to remove the obstacle
                         if self.received_messages_content and self.received_messages_content[-1] == 'Continue' and not self._remove:
                             self._answered = True
@@ -374,6 +386,12 @@ class BaselineAgent(ArtificialBrain):
                             self._phase = Phase.ENTER_ROOM
                             self._remove = False
                             return RemoveObject.__name__, {'object_id': info['obj_id']}
+                        # If the robot waited too long, continue
+                        if self._waiting and self.check_exceeded_responseTime():
+                            self._waiting = False
+                            # Add area to the to do list
+                            self._tosearch.append(self._door['room_name'])
+                            self._phase = Phase.FIND_NEXT_GOAL
                         # Remain idle untill the human communicates what to do with the identified obstacle
                         else:
                             return None, {}
@@ -386,6 +404,7 @@ class BaselineAgent(ArtificialBrain):
                                 Important features to consider are: \n safe - victims rescued: ' + str(self._collectedVictims) + ' \n explore - areas searched: area ' + str(self._searchedRooms).replace('area','') + ' \
                                 \n clock - removal time together: 3 seconds \n afstand - distance between us: ' + self._distanceHuman + '\n clock - removal time alone: 20 seconds','RescueBot')
                             self._waiting = True
+                            self.update_responseTime()
                         # Determine the next area to explore if the human tells the agent not to remove the obstacle          
                         if self.received_messages_content and self.received_messages_content[-1] == 'Continue' and not self._remove:
                             self._answered = True
@@ -413,6 +432,11 @@ class BaselineAgent(ArtificialBrain):
                             if state[{'is_human_agent': True}]:
                                 self._sendMessage('Lets remove stones blocking ' + str(self._door['room_name']) + '!','RescueBot')
                                 return None, {}
+                        if self._waiting and self.check_exceeded_responseTime():
+                            self._waiting = False
+                            # Add area to the to do list
+                            self._tosearch.append(self._door['room_name'])
+                            self._phase = Phase.FIND_NEXT_GOAL
                         # Remain idle until the human communicates what to do with the identified obstacle
                         else:
                             return None, {}
@@ -500,12 +524,14 @@ class BaselineAgent(ArtificialBrain):
                                         Important features to consider are: \n safe - victims rescued: ' + str(self._collectedVictims) + '\n explore - areas searched: area ' + str(self._searchedRooms).replace('area ','') + '\n \
                                         clock - extra time when rescuing alone: 15 seconds \n afstand - distance between us: ' + self._distanceHuman,'RescueBot')
                                     self._waiting = True
+                                    self.update_responseTime()
                                         
                                 if 'critical' in vic and self._answered == False and not self._waiting:
                                     self._sendMessage('Found ' + vic + ' in ' + self._door['room_name'] + '. Please decide whether to "Rescue" or "Continue" searching. \n\n \
                                         Important features to consider are: \n explore - areas searched: area ' + str(self._searchedRooms).replace('area','') + ' \n safe - victims rescued: ' + str(self._collectedVictims) + '\n \
                                         afstand - distance between us: ' + self._distanceHuman,'RescueBot')
-                                    self._waiting = True    
+                                    self._waiting = True
+                                    self.update_responseTime()
                     # Execute move actions to explore the area
                     return action, {}
                 ## TODO update willingness because the human lied 
@@ -572,6 +598,11 @@ class BaselineAgent(ArtificialBrain):
                     self._phase = Phase.FIND_NEXT_GOAL
                 # Remain idle untill the human communicates to the agent what to do with the found victim
                 ## TODO Bendik if the human takes too long to respond start planning your next task already
+                if self._waiting and self.check_exceeded_responseTime():
+                    self._recentVic = None
+                    self._todo.append(self._recentVic)
+                    self._phase = Phase.FIND_NEXT_GOAL
+                    self._waiting = False
                 if self.received_messages_content and self._waiting and self.received_messages_content[-1] != 'Rescue' and self.received_messages_content[-1] != 'Continue':
                     return None, {}
                 # Find the next area to search when the agent is not waiting for an answer from the human or occupied with rescuing a victim
@@ -699,20 +730,24 @@ class BaselineAgent(ArtificialBrain):
         # Check the content of the received messages
         for name, mssgs in receivedMessages.items():
             for msg in mssgs:
-                ## If we don't  trust the person at all, dismiss all their messages as bogus
-                if trustBeliefs[name].willingness == -1:
-                    continue
+                trustBelief = trustBeliefs[name]
 
                 # If a received message involves team members searching areas, add these areas to the memory of areas that have been explored
                 if msg.startswith("Search:"):
                     area = 'area ' + msg.split()[-1]
-                    ## TODO BENDIK add a should trust with appropriately weighted values
+                    ## TODO Ensure that the trust threshold values are optimal somehow (optional)
+                    ## If the trust values are below a certain threshold, ignore the message
+                    if trustBelief.should_trust(0, 0):
+                        continue
                     if area not in self._searchedRooms:
                         self._searchedRooms.append(area)
 
                 # If a received message involves team members finding victims, add these victims and their locations to memory
                 if msg.startswith("Found:"):
-                    ## TODO, BENDIK add a should trust that skips this message if we don't trust the teammate
+                    ## TODO Ensure that the trust threshold values are optimal somehow (optional)
+                    ## If the trust values are below a certain threshold, ignore the message
+                    if trustBelief.should_trust(0, -0.2):
+                        continue
                     # Identify which victim and area it concerns
                     if len(msg.split()) == 6:
                         foundVic = ' '.join(msg.split()[1:4])
@@ -737,7 +772,10 @@ class BaselineAgent(ArtificialBrain):
 
                 # If a received message involves team members rescuing victims, add these victims and their locations to memory
                 if msg.startswith('Collect:'):
-                    ## TODO, BENDIK add a should trust that skips this message if we don't trust the teammate
+                    ## TODO Ensure that the trust threshold values are optimal somehow (optional)
+                    ## If the trust values are below a certain threshold, ignore the message
+                    if trustBelief.should_trust(-0.2, -0.4):
+                        continue
                     # Identify which victim and area it concerns
                     if len(msg.split()) == 6:
                         collectVic = ' '.join(msg.split()[1:4])
@@ -762,6 +800,10 @@ class BaselineAgent(ArtificialBrain):
 
                 # If a received message involves team members asking for help with removing obstacles, add their location to memory and come over
                 if msg.startswith('Remove:'):
+                    ## TODO Ensure that the trust threshold values are optimal somehow (optional)
+                    ## If the trust values are below a certain threshold, ignore the message
+                    if trustBelief.should_trust(0, 0):
+                        continue
                     # Come over immediately when the agent is not carrying a victim
                     if not self._carrying:
                         # Identify at which location the human needs help
@@ -886,6 +928,14 @@ class BaselineAgent(ArtificialBrain):
                 dists[room] = utils.get_distance(agent_location, loc)
 
         return min(dists, key=dists.get)
+
+    def update_responseTime(self):
+        """Call this method whenever we are waiting for a human response"""
+        self._responseTime = time.time() + RESPONSE_TIME
+
+    def check_exceeded_responseTime(self):
+        """Check if the human response timeout has been exceeded"""
+        return time.time() > self._responseTime
 
     def _efficientSearch(self, tiles):
         '''
