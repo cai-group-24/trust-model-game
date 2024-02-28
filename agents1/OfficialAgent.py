@@ -821,7 +821,7 @@ class BaselineAgent(ArtificialBrain):
                     elif self._trustMechanism == TrustMechanism.ALWAYS_TRUST:
                         default = 1
                     elif self._trustMechanism == TrustMechanism.RANDOM_TRUST:
-                        default = random.uniform(-1, 1, 5)
+                        default = random.uniform(-1, 1)
 
                     competence = default
                     willingness = default
