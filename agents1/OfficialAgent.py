@@ -772,7 +772,7 @@ class BaselineAgent(ArtificialBrain):
         # Create a dictionary with trust values for all team members
         trustBeliefs = {}
         # Set a default starting trust value
-        default = 0.5
+        default = 0.0
         trustfile_header = []
         trustfile_contents = []
         # Check if agent already collaborated with this human before, if yes: load the corresponding trust values, if no: initialize using default trust values
@@ -787,24 +787,12 @@ class BaselineAgent(ArtificialBrain):
                     name = row[0]
                     competence = float(row[1])
                     willingness = float(row[2])
-                    # For each label we store the probability
-                    very_untrusted = float(row[3])
-                    untrusted = float(row[4])
-                    neutral = float(row[5])
-                    trusted = float(row[6])
-                    very_trusted = float(row[7])
-                    trustBeliefs[name] = TrustBelief(competence, willingness, very_untrusted, untrusted, neutral, trusted, very_trusted)
+                    trustBeliefs[name] = TrustBelief(competence, willingness)
                 # Initialize default trust values
-                if row and row[0]!=self._humanName:
+                if row and row[0] != self._humanName:
                     competence = default
                     willingness = default
-                    very_untrusted = float(0)
-                    untrusted = float(0)
-                    neutral = float(1)
-                    trusted = float(0)
-                    very_trusted = float(0)
-                    # TODO find good initial probabilities based on evaluation
-                    trustBeliefs[self._humanName] = TrustBelief(competence, willingness, very_untrusted, untrusted, neutral, trusted, very_trusted)
+                    trustBeliefs[self._humanName] = TrustBelief(competence, willingness)
         return trustBeliefs
 
     def _trustBelief(self, members, trustBeliefs, folder, receivedMessages):
@@ -813,18 +801,24 @@ class BaselineAgent(ArtificialBrain):
         '''
         # Update the trust value based on for example the received messages
         for message in receivedMessages:
-            # Increase agent trust in a team member that rescued a victim
+            # Increase agent trust in a team member that communicates they will rescue a victim
             if 'Collect' in message:
-                trustBeliefs[self._humanName].competence += 0.10
-                # Restrict the competence belief to a range of -1 to 1
-                trustBeliefs[self._humanName].competence = np.clip(trustBeliefs[self._humanName]['competence'], -1, 1)
+               trustBeliefs[self._humanName].increment_willingness(0.4)
+            # Increase agent trust in a team member that communicates they found a victim
+            elif 'Found' in message:
+                trustBeliefs[self._humanName].increment_competence(0.2)
+            # Increase agent trust in team member that
+            elif 'Search' in message:
+                trustBeliefs[self._humanName].increment_competence(0.1)
+            # Increase agent trust in team member that
+            elif 'Remove' in message:
+                trustBeliefs[self._humanName].increment_competence(0.1)
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writerow(['name','competence','willingness', 'very_untrusted', 'untrusted', 'neutral', 'trusted', 'very_trusted'])
+            csv_writer.writerow(['name', 'competence', 'willingness'])
             trust_belief = trustBeliefs[self._humanName]
-            csv_writer.writerow([self._humanName, trust_belief.competence, trust_belief.willingness, trust_belief.very_untrusted,
-                                 trust_belief.untrusted, trust_belief.neutral, trust_belief.trusted, trust_belief.very_trusted])
+            csv_writer.writerow([self._humanName, trust_belief.competence, trust_belief.willingness])
 
         return trustBeliefs
 
