@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 class TrustBelief:
@@ -54,3 +55,22 @@ class TrustBelief:
         Reset the willingness alpha value to 1.
         """
         self.willingness_alpha = 1
+
+    def should_trust(self, min_comp, min_will):
+        """
+        Given some competence and willingness thresholds,
+        decide if self should be trusted or not.
+        For activities which require no competence, just put -1 as max_comp.
+        """
+        if self.competence < min_comp or self.willingness < min_will:
+            return False
+        # Define randomness to return true or false
+        return self.trust_formula(random.uniform(0, 1, 5))
+
+    def trust_formula(self, random_value):
+        """
+        Decide whether to trust or not by combining competence and willingness using a formula.
+        """
+        formula = self.competence*random_value + self.willingness*random_value
+
+        return formula > 0.5
