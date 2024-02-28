@@ -6,6 +6,7 @@ import pathlib
 from SaR_gui import visualization_server
 from worlds1.WorldBuilder import create_builder
 from pathlib import Path
+from agents1.OfficialAgent import TrustMechanism
 from loggers.OutputLogger import output_logger
 
 if __name__ == "__main__":
@@ -20,7 +21,17 @@ if __name__ == "__main__":
         print("\nEnter one of the human conditions 'normal', 'strong', or 'weak':")
         choice3=input()
         if choice3=='normal' or choice3=='strong' or choice3=='weak':
-            builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld)
+            print("\nEnter a baseline (if applicable)")
+            choice4 = input()
+            if choice4 == 'always':
+                builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld, trust_mechanism=TrustMechanism.ALWAYS_TRUST)
+            elif choice4 == 'never':
+                print("on god no capping")
+                builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld, trust_mechanism=TrustMechanism.NEVER_TRUST)
+            elif choice4 == 'random':
+                builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld, trust_mechanism=TrustMechanism.RANDOM_TRUST)
+            else:
+                builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld)
         else:
             print("\nWrong condition name entered")
 
