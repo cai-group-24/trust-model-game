@@ -775,7 +775,7 @@ class BaselineAgent(ArtificialBrain):
                     area = 'area ' + msg.split()[-1]
                     ## TODO Ensure that the trust threshold values are optimal somehow (optional)
                     ## If the trust values are below a certain threshold, ignore the message
-                    if trustBelief.should_trust(0, 0):
+                    if not trustBelief.should_trust(0, 0):
                         continue
                     if area not in self._searchedRooms:
                         self._searchedRooms.append(area)
@@ -784,7 +784,7 @@ class BaselineAgent(ArtificialBrain):
                 if msg.startswith("Found:"):
                     ## TODO Ensure that the trust threshold values are optimal somehow (optional)
                     ## If the trust values are below a certain threshold, ignore the message
-                    if trustBelief.should_trust(0, -0.2):
+                    if not trustBelief.should_trust(0, -0.2):
                         continue
                     # Identify which victim and area it concerns
                     if len(msg.split()) == 6:
@@ -812,7 +812,7 @@ class BaselineAgent(ArtificialBrain):
                 if msg.startswith('Collect:'):
                     ## TODO Ensure that the trust threshold values are optimal somehow (optional)
                     ## If the trust values are below a certain threshold, ignore the message
-                    if trustBelief.should_trust(-0.2, -0.4):
+                    if not trustBelief.should_trust(-0.2, -0.4):
                         continue
                     # Identify which victim and area it concerns
                     if len(msg.split()) == 6:
@@ -840,7 +840,7 @@ class BaselineAgent(ArtificialBrain):
                 if msg.startswith('Remove:'):
                     ## TODO Ensure that the trust threshold values are optimal somehow (optional)
                     ## If the trust values are below a certain threshold, ignore the message
-                    if trustBelief.should_trust(0, 0):
+                    if not trustBelief.should_trust(0, 0):
                         continue
                     # Come over immediately when the agent is not carrying a victim
                     if not self._carrying:
