@@ -353,7 +353,7 @@ class BaselineAgent(ArtificialBrain):
                                 self._sendMessage('Lets remove rock blocking ' + str(self._door['room_name']) + '!','RescueBot')
                                 return None, {}
                         # If the robot waited too long then will proceed on its own
-                        if self._waiting and self.check_exceeded_responseTime():
+                        if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                             self._waiting = False
                             # Add area to the to do list
                             self._tosearch.append(self._door['room_name'])
@@ -390,7 +390,7 @@ class BaselineAgent(ArtificialBrain):
                             self._remove = False
                             return RemoveObject.__name__, {'object_id': info['obj_id']}
                         # If the robot waited too long, continue
-                        if self._waiting and self.check_exceeded_responseTime():
+                        if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                             self._waiting = False
                             # Add area to the to do list
                             self._tosearch.append(self._door['room_name'])
@@ -435,7 +435,7 @@ class BaselineAgent(ArtificialBrain):
                             if state[{'is_human_agent': True}]:
                                 self._sendMessage('Lets remove stones blocking ' + str(self._door['room_name']) + '!','RescueBot')
                                 return None, {}
-                        if self._waiting and self.check_exceeded_responseTime():
+                        if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                             self._waiting = False
                             # Add area to the to do list
                             self._tosearch.append(self._door['room_name'])
@@ -632,7 +632,7 @@ class BaselineAgent(ArtificialBrain):
                     self._phase = Phase.FIND_NEXT_GOAL
                 # Remain idle untill the human communicates to the agent what to do with the found victim
                 ## TODO Bendik if the human takes too long to respond start planning your next task already
-                if self._waiting and self.check_exceeded_responseTime():
+                if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                     self._recentVic = None
                     self._todo.append(self._recentVic)
                     self._phase = Phase.FIND_NEXT_GOAL
