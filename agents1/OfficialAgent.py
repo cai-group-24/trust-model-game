@@ -105,6 +105,9 @@ class BaselineAgent(ArtificialBrain):
         trustBeliefs = self._loadBelief(self._teamMembers, self._folder)
         self._trustBelief(self._teamMembers, trustBeliefs, self._folder, self._receivedMessages)
 
+        ## Alex: For some reason this is a list, but I printed it and it is always just the one human.
+        trustBelief = trustBeliefs[self._teamMembers[0]]
+
         # Process messages from team members
         self._processMessages(state,  self._teamMembers, self._condition, trustBeliefs)
 
@@ -518,8 +521,19 @@ class BaselineAgent(ArtificialBrain):
                                 self._foundVictims.append(vic)
                                 self._foundVictimLocs[vic] = {'location': info['location'],'room': self._door['room_name'], 'obj_id': info['obj_id']}
                                 # Communicate which victim the agent found and ask the human whether to rescue the victim now or at a later stage
-                                ## TODO ALEXrescue victim anyway if human competence (or willingness?) is very low
                                 if 'mild' in vic and self._answered == False and not self._waiting:
+                                    ## If human's name is incapablo, rescue anyway
+                                    if not trustBelief.should_trust(0.0, 0.0):
+                                        self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
+                                        self._rescue = 'alone'
+                                        self._answered = True
+                                        self._waiting = False
+                                        self._goalVic = self._recentVic
+                                        self._goalLoc = self._remaining[self._goalVic]
+                                        self._recentVic = None
+                                        self._phase = Phase.PLAN_PATH_TO_VICTIM
+                                        continue
+
                                     self._sendMessage('Found ' + vic + ' in ' + self._door['room_name'] + '. Please decide whether to "Rescue together", "Rescue alone", or "Continue" searching. \n \n \
                                         Important features to consider are: \n safe - victims rescued: ' + str(self._collectedVictims) + '\n explore - areas searched: area ' + str(self._searchedRooms).replace('area ','') + '\n \
                                         clock - extra time when rescuing alone: 15 seconds \n afstand - distance between us: ' + self._distanceHuman,'RescueBot')
@@ -563,8 +577,19 @@ class BaselineAgent(ArtificialBrain):
                     self._recentVic = None
                     self._phase = Phase.PLAN_PATH_TO_VICTIM
                 # Make a plan to rescue a found mildly injured victim together if the human decides so
-                ## TODO ALEX if the human is super incompetent or unwilling then the robot could carry victim anyway
                 if self.received_messages_content and self.received_messages_content[-1] == 'Rescue together' and 'mild' in self._recentVic:
+                    #If human's name is incapablo, pick up anyway
+                    ## TODO optimize thresholds
+                    if not trustBelief.should_trust(0, -0.4):
+                        self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
+                        self._rescue = 'alone'
+                        self._answered = True
+                        self._waiting = False
+                        self._goalVic = self._recentVic
+                        self._goalLoc = self._remaining[self._goalVic]
+                        self._recentVic = None
+                        self._phase = Phase.PLAN_PATH_TO_VICTIM
+                        continue
                     self._rescue = 'together'
                     self._answered = True
                     self._waiting = False
@@ -577,7 +602,6 @@ class BaselineAgent(ArtificialBrain):
                     self._goalVic = self._recentVic
                     self._recentVic = None
                     self._phase = Phase.PLAN_PATH_TO_VICTIM
-                ##TODO ALEX if the human is super incompetent or unwilling then the robot could carry victim anyway
                 # Make a plan to rescue the mildly injured victim alone if the human decides so, and communicate this to the human
                 if self.received_messages_content and self.received_messages_content[-1] == 'Rescue alone' and 'mild' in self._recentVic:
                     self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
@@ -589,8 +613,18 @@ class BaselineAgent(ArtificialBrain):
                     self._recentVic = None
                     self._phase = Phase.PLAN_PATH_TO_VICTIM
                 # Continue searching other areas if the human decides so
-                ## TODO if the human is bad, you could still carry victim
                 if self.received_messages_content and self.received_messages_content[-1] == 'Continue':
+                    ## TODO optimize thresholds
+                    if not trustBelief.should_trust(-1, -0.5):
+                        self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
+                        self._rescue = 'alone'
+                        self._answered = True
+                        self._waiting = False
+                        self._goalVic = self._recentVic
+                        self._goalLoc = self._remaining[self._goalVic]
+                        self._recentVic = None
+                        self._phase = Phase.PLAN_PATH_TO_VICTIM
+                        continue
                     self._answered = True
                     self._waiting = False
                     self._todo.append(self._recentVic)
