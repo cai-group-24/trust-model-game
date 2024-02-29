@@ -14,7 +14,7 @@ from matrx.actions.object_actions import RemoveObject
 from matrx.objects import EnvObject
 from matrx.world_builder import RandomProperty
 from matrx.goals import WorldGoal
-from agents1.OfficialAgent import BaselineAgent
+from agents1.OfficialAgent import BaselineAgent, TrustMechanism
 from agents1.TutorialAgent import TutorialAgent
 from actions1.CustomActions import RemoveObjectTogether
 from brains1.HumanBrain import HumanBrain
@@ -65,7 +65,7 @@ def add_drop_off_zones(builder, task_type):
             builder.add_area((17,7), width=1, height=4, name=f"Drop off {nr_zone}",visualize_opacity=0.5, visualize_colour=drop_off_color, drop_zone_nr=nr_zone, is_drop_zone=True, is_goal_block=False, is_collectable=False) 
 
 # Add the agents to the world
-def add_agents(builder, condition, task_type, name, folder):
+def add_agents(builder, condition, task_type, name, folder, trust_mechanism):
     # Define the agent's sense capabilites
     sense_capability_agent = SenseCapability({AgentBody: agent_sense_range, CollectableBlock: object_sense_range, None: other_sense_range, ObstacleObject: 1})
     # Define the human's sense capabilities based on the selected condition
@@ -80,7 +80,7 @@ def add_agents(builder, condition, task_type, name, folder):
         nr_agents = agents_per_team - human_agents_per_team
         for agent_nr in range(nr_agents):
             if task_type=="official":
-                brain = BaselineAgent(slowdown=8, condition=condition, name=name, folder=folder) # Slowdown makes the agent a bit slower, do not change value during evaluations
+                brain = BaselineAgent(slowdown=8, condition=condition, name=name, folder=folder, trust_mechanism=trust_mechanism) # Slowdown makes the agent a bit slower, do not change value during evaluations
                 loc = (22,11)
             if task_type=="tutorial":
                 brain = TutorialAgent(slowdown=8, condition=condition, name=name, folder=folder)
@@ -100,7 +100,8 @@ def add_agents(builder, condition, task_type, name, folder):
             builder.add_human_agent(loc, brain, team=team_name, name=name, key_action_map=key_action_map, sense_capability=sense_capability_human, is_traversable=True, img_name="/images/rescue-man-final3.svg", visualize_when_busy=True)
 
 # Create the world
-def create_builder(task_type, condition, name, folder):
+# Last variable determines the trust mechanism to be used, be it one of the baselines or our implemented mechanism
+def create_builder(task_type, condition, name, folder, trust_mechanism = TrustMechanism.CUSTOM_TRUST):
     # Set numpy's random generator
     np.random.seed(random_seed)
     # Create the collection goal
@@ -300,7 +301,7 @@ def create_builder(task_type, condition, name, folder):
             builder.add_object(loc,'street',EnvObject,is_traversable=True,is_movable=False,visualize_shape='img',img_name="/images/paving-final15.svg", visualize_size=1) 
     
     add_drop_off_zones(builder, task_type)
-    add_agents(builder, condition, task_type, name, folder)
+    add_agents(builder, condition, task_type, name, folder, trust_mechanism)
 
     return builder
 
