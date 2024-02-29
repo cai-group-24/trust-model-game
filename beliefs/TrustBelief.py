@@ -32,6 +32,13 @@ class TrustBelief:
         self.competence = np.clip([self.competence + x * self.competence_alpha],  -1, 1)[0]
         self.competence_alpha = self.competence_alpha - self.competence_alpha * 0.15
 
+    def increment_trust(self, x: float):
+        """
+        Increment trust by increasing willingness and trust by x.
+        """
+        self.increment_competence(x)
+        self.increment_willingness(x)
+
     def decrement_willingness(self, x: float):
         """
         Decrement the willingness by a factor x, correct by alpha and clip to [-1, 1].
@@ -43,6 +50,13 @@ class TrustBelief:
         Decrement the willingness by a factor x, correct by alpha and clip to [-1, 1].
         """
         self.increment_competence(-x)
+
+    def decrement_trust(self, x: float):
+        """
+        Decrement trust by increasing willingness and trust by x.
+        """
+        self.decrement_competence(x)
+        self.decrement_willingness(x)
 
     def reset_competence_alpha(self):
         """

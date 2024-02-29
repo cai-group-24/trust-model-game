@@ -559,6 +559,8 @@ class BaselineAgent(ArtificialBrain):
                     # Reset received messages (bug fix)
                     self.received_messages = []
                     self.received_messages_content = []
+                    # Agent is lying about victim locations
+                    trustBeliefs[self._humanName].decrement_willingness(0.5)
                 # Add the area to the list of searched areas
                 if self._door['room_name'] not in self._searchedRooms:
                     self._searchedRooms.append(self._door['room_name'])
@@ -631,13 +633,15 @@ class BaselineAgent(ArtificialBrain):
                     self._recentVic = None
                     self._phase = Phase.FIND_NEXT_GOAL
                 # Remain idle untill the human communicates to the agent what to do with the found victim
-                ## TODO Bendik if the human takes too long to respond start planning your next task already
                 if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                     self._recentVic = None
                     self._todo.append(self._recentVic)
                     self._phase = Phase.FIND_NEXT_GOAL
                     self._waiting = False
-                if self.received_messages_content and self._waiting and self.received_messages_content[-1] != 'Rescue' and self.received_messages_content[-1] != 'Continue':
+                if self.received_messages_content and self._waiting and self.received_messages_content[
+                    -1] != 'Rescue' and self.received_messages_content[-1] != 'Continue':
+                    # Decrease trust because human is idle
+                    trustBeliefs[self._humanName].decrement_trust(0.05)
                     return None, {}
                 # Find the next area to search when the agent is not waiting for an answer from the human or occupied with rescuing a victim
                 if not self._waiting and not self._rescue:
@@ -915,16 +919,21 @@ class BaselineAgent(ArtificialBrain):
         for message in receivedMessages:
             # Increase agent trust in a team member that communicates they will rescue a victim
             if 'Collect' in message:
-               trustBeliefs[self._humanName].increment_willingness(0.4)
+                trustBeliefs[self._humanName].increment_trust(0.4)
             # Increase agent trust in a team member that communicates they found a victim
             elif 'Found' in message:
-                trustBeliefs[self._humanName].increment_competence(0.2)
-            # Increase agent trust in team member that
+                trustBeliefs[self._humanName].increment_trust(0.2)
+            # Increase agent trust when they communicate searching a room
             elif 'Search' in message:
-                trustBeliefs[self._humanName].increment_competence(0.1)
-            # Increase agent trust in team member that
+                area = 'area ' + message.split()[-1]
+                # Human is searching already searched room
+                if area in self._searchedRooms:
+                    trustBeliefs[self._humanName].decrement_trust(0.2)
+                else:
+                    trustBeliefs[self._humanName].increment_trust(0.1)
+            # Increase agent trust when they communicate removing an obstacle
             elif 'Remove' in message:
-                trustBeliefs[self._humanName].increment_competence(0.1)
+                trustBeliefs[self._humanName].increment_trust(0.2)
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
