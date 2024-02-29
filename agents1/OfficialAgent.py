@@ -946,6 +946,9 @@ class BaselineAgent(ArtificialBrain):
         if 'Our score is' in msg.content:
             self.send_message(msg)
 
+    def _pick_up_victim(self):
+        return
+
     def _getClosestRoom(self, state, objs, currentDoor):
         '''
         calculate which area is closest to the agent's location

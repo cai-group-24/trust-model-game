@@ -65,7 +65,7 @@ class TrustBelief:
         if self.competence < min_comp or self.willingness < min_will:
             return False
         # Define randomness to return true or false
-        return self.trust_formula(random.uniform(0, 1, 5))
+        return self.trust_formula(random.uniform(0, 1))
 
     def trust_formula(self, random_value):
         """
