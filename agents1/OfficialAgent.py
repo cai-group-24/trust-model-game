@@ -106,7 +106,7 @@ class BaselineAgent(ArtificialBrain):
         self._trustBelief(self._teamMembers, trustBeliefs, self._folder, self._receivedMessages)
 
         ## Alex: For some reason this is a list, but I printed it and it is always just the one human.
-        trustBelief = trustBeliefs[self._teamMembers[0]]
+        trustBelief = trustBeliefs[self._humanName]
 
         # Process messages from team members
         self._processMessages(state,  self._teamMembers, self._condition, trustBeliefs)
