@@ -8,20 +8,14 @@ from matrx.actions.object_actions import RemoveObject
 from matrx.agents.agent_utils.navigator import Navigator
 from matrx.agents.agent_utils.state_tracker import StateTracker
 from matrx.messages.message import Message
-
 from actions1.CustomActions import *
 from actions1.CustomActions import CarryObject, Drop
-from beliefs.TrustBelief import TrustBelief
+from beliefs.TrustBelief import TrustBelief, TrustMechanism
 from brains1.ArtificialBrain import ArtificialBrain
 
 ## Time the human has to respond before the robot starts another task
-RESPONSE_TIME = 5
+RESPONSE_TIME = 7
 
-class TrustMechanism(enum.Enum):
-    NEVER_TRUST = 1,
-    ALWAYS_TRUST = 2,
-    RANDOM_TRUST = 3,
-    CUSTOM_TRUST = 4
 class Phase(enum.Enum):
     INTRO = 1,
     FIND_NEXT_GOAL = 2,
@@ -102,7 +96,7 @@ class BaselineAgent(ArtificialBrain):
                     self._receivedMessages.append(mssg.content)
 
         # Initialize and update trust beliefs for team members
-        trustBeliefs = self._loadBelief(self._teamMembers, self._folder)
+        trustBeliefs = self._loadBelief(self._teamMembers, self._folder, self._trustMechanism)
         self._trustBelief(self._teamMembers, trustBeliefs, self._folder, self._receivedMessages)
 
         ## Alex: For some reason this is a list, but I printed it and it is always just the one human.
@@ -871,7 +865,7 @@ class BaselineAgent(ArtificialBrain):
             if mssgs and mssgs[-1].split()[-1] in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
                 self._humanLoc = int(mssgs[-1].split()[-1])
 
-    def _loadBelief(self, members, folder):
+    def _loadBelief(self, members, folder, trust_mechanism):
         '''
         Loads trust belief values if agent already collaborated with human before, otherwise trust belief values are initialized using default values.
         '''
@@ -893,7 +887,7 @@ class BaselineAgent(ArtificialBrain):
                     name = row[0]
                     competence = float(row[1])
                     willingness = float(row[2])
-                    trustBeliefs[name] = TrustBelief(competence, willingness)
+                    trustBeliefs[name] = TrustBelief(competence, willingness, trust_mechanism)
                 # Initialize default trust values
                 if row and row[0] != self._humanName:
                     if self._trustMechanism == TrustMechanism.NEVER_TRUST:
@@ -905,7 +899,7 @@ class BaselineAgent(ArtificialBrain):
 
                     competence = default
                     willingness = default
-                    trustBeliefs[self._humanName] = TrustBelief(competence, willingness)
+                    trustBeliefs[self._humanName] = TrustBelief(competence, willingness, trust_mechanism)
         return trustBeliefs
 
     def _trustBelief(self, members, trustBeliefs, folder, receivedMessages):

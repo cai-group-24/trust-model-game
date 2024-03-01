@@ -1,6 +1,12 @@
 import numpy as np
 import random
+import enum
 
+class TrustMechanism(enum.Enum):
+    NEVER_TRUST = 1,
+    ALWAYS_TRUST = 2,
+    RANDOM_TRUST = 3,
+    CUSTOM_TRUST = 4
 
 class TrustBelief:
     """
@@ -12,9 +18,10 @@ class TrustBelief:
     competence_alpha: float
     willingness_alpha: float
 
-    def __init__(self, competence: float, willingness: float):
+    def __init__(self, competence: float, willingness: float, trust_mechanism: TrustMechanism):
         self.competence = competence
         self.willingness = willingness
+        self.trust_mechanism = trust_mechanism
         self.competence_alpha = 1
         self.willingness_alpha = 1
 
@@ -22,15 +29,17 @@ class TrustBelief:
         """
         Increment the willingness by a factor x, correct by alpha and clip to [-1, 1].
         """
-        self.willingness = np.clip([self.willingness + x * self.willingness_alpha], -1, 1)[0]
-        self.willingness_alpha = self.willingness_alpha - self.willingness_alpha * 0.15
+        if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
+            self.willingness = np.clip([self.willingness + x * self.willingness_alpha], -1, 1)[0]
+            self.willingness_alpha = self.willingness_alpha - self.willingness_alpha * 0.15
 
     def increment_competence(self, x: float):
         """
         Increment the competence by a factor x, correct by alpha and clip to [-1, 1].
         """
-        self.competence = np.clip([self.competence + x * self.competence_alpha],  -1, 1)[0]
-        self.competence_alpha = self.competence_alpha - self.competence_alpha * 0.15
+        if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
+            self.competence = np.clip([self.competence + x * self.competence_alpha],  -1, 1)[0]
+            self.competence_alpha = self.competence_alpha - self.competence_alpha * 0.15
 
     def increment_trust(self, x: float):
         """
@@ -79,12 +88,12 @@ class TrustBelief:
         if self.competence < min_comp or self.willingness < min_will:
             return False
         # Define randomness to return true or false
-        return self.trust_formula(random.uniform(0, 1))
+        return self.trust_formula()
 
-    def trust_formula(self, random_value):
+    def trust_formula(self):
         """
         Decide whether to trust or not by combining competence and willingness using a formula.
         """
-        formula = self.competence*random_value + self.willingness*random_value
+        formula = (self.competence * 0.4) + (self.willingness * 0.6)
 
-        return formula > 0.5
+        return formula > 0

@@ -6,7 +6,7 @@ import pathlib
 from SaR_gui import visualization_server
 from worlds1.WorldBuilder import create_builder
 from pathlib import Path
-from agents1.OfficialAgent import TrustMechanism
+from beliefs.TrustBelief import TrustMechanism
 from loggers.OutputLogger import output_logger
 
 if __name__ == "__main__":
