@@ -83,7 +83,7 @@ class TrustBelief:
 
     def trust_formula(self):
         """
-        Decide whether to trust or not by combining competence and willingness using a formula.
+        Decide whether to trust or not by combining competence and willingness using a weighted sum and random threshold.
         """
         # TODO find proper weights based on literature
         willingness_weight = 0.4
@@ -92,4 +92,4 @@ class TrustBelief:
 
         random_threshold = random.uniform(0, 1)
 
-        return competence_willingness_sum > random_threshold
+        return competence_willingness_sum >= random_threshold
