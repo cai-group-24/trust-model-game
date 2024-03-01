@@ -352,7 +352,7 @@ class BaselineAgent(ArtificialBrain):
                         if self.received_messages_content and self.received_messages_content[-1] == 'Remove' or self._remove:
                             ## TODO finetune values
                             # If we don't trust the person, we continue because we can't remove it on our own
-                            if trustBelief.should_trust(-0.2, -0.4):
+                            if not trustBelief.should_trust(-0.2, -0.4):
                                 # Add area to the to do list
                                 self._tosearch.append(self._door['room_name'])
                                 self._phase = Phase.FIND_NEXT_GOAL
