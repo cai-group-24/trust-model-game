@@ -504,19 +504,21 @@ class BaselineAgent(ArtificialBrain):
                                                   'RescueBot')
                                 return None, {}
                             elif self.check_exceeded_arrivalTime():
-                                ## TODO MAX, decrement willingness as the person said they would come but they didnt within the time
                                 self._waiting = False
                                 # Add area to the to do list
                                 self._tosearch.append(self._door['room_name'])
                                 self._phase = Phase.FIND_NEXT_GOAL
+                                # Decrement willingness as the person said they would come, but they didn't within the time
+                                trustBelief.decrement_willingness(0.05)
 
                         # If we have waited for a response for too long, we keep going
                         if self._waiting and self.check_exceeded_responseTime() and not self._answered:
-                            ## TODO MAX, decrement competence by a bit because they didn't respond quickly enough
                             self._waiting = False
                             # Add area to the to do list
                             self._tosearch.append(self._door['room_name'])
                             self._phase = Phase.FIND_NEXT_GOAL
+                            # Decrement competence because the human was late
+                            trustBelief.decrement_competence(0.1)
                         # Remain idle until the human communicates what to do with the identified obstacle
                         else:
                             return None, {}
@@ -653,7 +655,7 @@ class BaselineAgent(ArtificialBrain):
                 if self.received_messages_content and self.received_messages_content[-1] == 'Rescue' and 'critical' in self._recentVic:
                     ## TODO Optimize thresholds, willingness should be more important than competence because here we assume that the person is lying not incompetent
                     # If we can't trust the person to tell the truth, we continue instantly instead of wasting time waiting for them to come
-                    if not trustBelief.should_trust(0, -0.4):
+                    if not trustBelief.should_trust(0, -0.4, comp_weight=0.3, will_weight=0.7):
                         self._answered = True
                         self._waiting = False
                         self._todo.append(self._recentVic)
