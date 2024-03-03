@@ -88,12 +88,17 @@ class TrustBelief:
         if self.competence < min_comp or self.willingness < min_will:
             return False
         # Define randomness to return true or false
-        return self.trust_formula()
+        return self.trust_formula(random.uniform(0, 1))
 
-    def trust_formula(self):
+    def trust_formula(self, random_value):
         """
-        Decide whether to trust or not by combining competence and willingness using a formula.
+        Decide whether to trust or not by combining competence and willingness using a weighted sum and random threshold.
         """
-        formula = (self.competence * 0.4) + (self.willingness * 0.6)
+        # TODO find proper weights based on literature
+        willingness_weight = 0.4
+        competence_weight = 0.6
+        competence_willingness_sum = self.competence*competence_weight + self.willingness*willingness_weight
 
-        return formula > 0
+        random_threshold = random.uniform(0, 1)
+
+        return competence_willingness_sum >= random_threshold
