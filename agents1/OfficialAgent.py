@@ -303,7 +303,7 @@ class BaselineAgent(ArtificialBrain):
                     self._currentDoor = None
                     self._phase = Phase.FIND_NEXT_GOAL
                     # Increase competence of human because they found the previously identified target victim
-                    trustBelief.increment_competence(0.05)
+                    trustBelief.increment_willingness(0.05)
                 # Identify the next area to search if the human already searched the previously identified area
                 if self._door['room_name'] in self._searchedRooms and self._goalVic not in self._foundVictims:
                     self._currentDoor = None
@@ -523,8 +523,6 @@ class BaselineAgent(ArtificialBrain):
                                 # Add the exact victim location to the corresponding dictionary
                                 self._foundVictimLocs[vic] = {'location': info['location'],'room': self._door['room_name'], 'obj_id': info['obj_id']}
                                 if vic == self._goalVic:
-                                    # Increment competence and willingness because victim found which was previously found by human
-                                    trustBelief.increment_trust(0.05)
                                     # Communicate which victim was found
                                     self._sendMessage('Found ' + vic + ' in ' + self._door['room_name'] + ' because you told me ' + vic + ' was located here.','RescueBot')
                                     # Add the area to the list with searched areas
@@ -541,7 +539,7 @@ class BaselineAgent(ArtificialBrain):
                                 self._foundVictimLocs[vic] = {'location': info['location'],'room': self._door['room_name'], 'obj_id': info['obj_id']}
                                 # Communicate which victim the agent found and ask the human whether to rescue the victim now or at a later stage
                                 if 'mild' in vic and self._answered == False and not self._waiting:
-                                    ## If human's name is incapablo, rescue anyway
+                                    ## If we don't trust the human, we rescue alone anyways
                                     if not trustBelief.should_trust(0.0, 0.0):
                                         self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
                                         self._rescue = 'alone'
@@ -598,8 +596,7 @@ class BaselineAgent(ArtificialBrain):
                     self._phase = Phase.PLAN_PATH_TO_VICTIM
                 # Make a plan to rescue a found mildly injured victim together if the human decides so
                 if self.received_messages_content and self.received_messages_content[-1] == 'Rescue together' and 'mild' in self._recentVic:
-                    #If human's name is incapablo, pick up anyway
-                    ## TODO optimize thresholds
+                    # If we don't trust the human we pick them up alone, even if the human says they will help
                     if not trustBelief.should_trust(0, -0.4):
                         self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
                         self._rescue = 'alone'
@@ -954,7 +951,7 @@ class BaselineAgent(ArtificialBrain):
                     trustBeliefs[self._humanName].increment_trust(0.05)
             elif 'Remove' in message:
                 # Increase agent trust when they communicate removing an obstacle
-                trustBeliefs[self._humanName].increment_trust(0.1)
+                trustBeliefs[self._humanName].increment_willingness(0.1)
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)

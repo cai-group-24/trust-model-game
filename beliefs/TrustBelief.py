@@ -72,6 +72,6 @@ class TrustBelief:
         competence_weight = 0.6
         competence_willingness_sum = self.competence*competence_weight + self.willingness*willingness_weight
 
-        random_threshold = random.uniform(0, 1)
+        random_threshold = random.uniform(-1, 1)
 
         return competence_willingness_sum >= random_threshold
