@@ -79,6 +79,8 @@ class BaselineAgent(ArtificialBrain):
         self._moving = False
         self._trustMechanism = trust_mechanism
         self._responseTime = None
+        # Flag representing whether we searched everything but did not complete the game
+        self._is_completed_but_not_found = False
 
     def initialize(self):
         # Initialization of the state tracker and navigation algorithm
@@ -225,8 +227,9 @@ class BaselineAgent(ArtificialBrain):
                     # If there are no target victims found, visit an unsearched area to search for victims
                     if vic not in self._foundVictims or vic in self._foundVictims and vic in self._todo and len(self._searchedRooms)>0:
                         self._phase = Phase.PICK_UNSEARCHED_ROOM
+                        # TODO: commented out
                         # Slightly decrease trust in human because they haven't found a victim
-                        trustBelief.decrement_trust(0.03)
+                        ## trustBelief.decrement_trust(0.03)
 
             if Phase.PICK_UNSEARCHED_ROOM == self._phase:
                 agent_location = state[self.agent_id]['location']
@@ -246,7 +249,10 @@ class BaselineAgent(ArtificialBrain):
                     self._sendMessage('Going to re-search all areas.', 'RescueBot')
                     self._phase = Phase.FIND_NEXT_GOAL
                     # Decrement trust in human because we searched everything but not all victims are rescued
-                    trustBelief.decrement_trust(0.1)
+                    # We only apply the decrement once
+                    if not self._is_completed_but_not_found:
+                        trustBelief.decrement_trust(0.1)
+                        self._is_completed_but_not_found = True
                 # If there are still areas to search, define which one to search next
                 else:
                     # Identify the closest door when the agent did not search any areas yet
