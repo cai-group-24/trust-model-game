@@ -2,13 +2,11 @@ import numpy as np
 import random
 import enum
 
-
 class TrustMechanism(enum.Enum):
     NEVER_TRUST = 1,
     ALWAYS_TRUST = 2,
     RANDOM_TRUST = 3,
     CUSTOM_TRUST = 4
-
 
 class TrustBelief:
     """
@@ -17,31 +15,25 @@ class TrustBelief:
     # We ignore competence and willingness for now
     competence: float
     willingness: float
-    competence_alpha: float
-    willingness_alpha: float
 
     def __init__(self, competence: float, willingness: float, trust_mechanism: TrustMechanism):
         self.competence = competence
         self.willingness = willingness
         self.trust_mechanism = trust_mechanism
-        self.competence_alpha = 1
-        self.willingness_alpha = 1
 
     def increment_willingness(self, x: float):
         """
         Increment the willingness by a factor x, correct by alpha and clip to [-1, 1].
         """
         if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
-            self.willingness = np.clip([self.willingness + x * self.willingness_alpha], -1, 1)[0]
-            self.willingness_alpha = self.willingness_alpha - self.willingness_alpha * 0.15
+            self.willingness = np.clip([self.willingness + x], -1, 1)[0]
 
     def increment_competence(self, x: float):
         """
         Increment the competence by a factor x, correct by alpha and clip to [-1, 1].
         """
         if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
-            self.competence = np.clip([self.competence + x * self.competence_alpha],  -1, 1)[0]
-            self.competence_alpha = self.competence_alpha - self.competence_alpha * 0.15
+            self.competence = np.clip([self.competence + x],  -1, 1)[0]
 
     def increment_trust(self, x: float):
         """
@@ -69,36 +61,11 @@ class TrustBelief:
         self.decrement_competence(x)
         self.decrement_willingness(x)
 
-    def reset_competence_alpha(self):
-        """
-        Reset the competence alpha value to 1.
-        """
-        self.competence_alpha = 1
-
-    def reset_willingness_alpha(self):
-        """
-        Reset the willingness alpha value to 1.
-        """
-        self.willingness_alpha = 1
-
-    # TODO find proper competence and willingness weights based on literature
-    def should_trust(self, min_comp: float, min_will: float, comp_weight=0.6, will_weight=0.4):
+    def should_trust(self, min_comp: float, min_will: float, comp_weight=0.3, will_weight=0.7):
         """
         Given some competence and willingness thresholds,
         decide if self should be trusted or not.
         For activities which require no competence, just put -1 as max_comp.
         """
-        if self.competence < min_comp or self.willingness < min_will:
-            return False
-        # Define randomness to return true or false
-        return self.trust_formula(comp_weight, will_weight)
-
-    def trust_formula(self, comp_weight: float, will_weight: float):
-        """
-        Decide whether to trust or not by combining competence and willingness using a weighted sum and random threshold.
-        """
-        competence_willingness_sum = self.competence*comp_weight + self.willingness*will_weight
-
-        random_threshold = random.uniform(0, 1)
-
-        return competence_willingness_sum >= random_threshold
+        competence_willingness_sum = self.competence * comp_weight + self.willingness * will_weight
+        return competence_willingness_sum >= (min_comp * comp_weight) + (min_will * will_weight)
