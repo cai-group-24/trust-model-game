@@ -67,17 +67,5 @@ class TrustBelief:
         decide if self should be trusted or not.
         For activities which require no competence, just put -1 as max_comp.
         """
-        if self.competence < min_comp or self.willingness < min_will:
-            return False
-        # Define randomness to return true or false
-        return self.trust_formula(comp_weight, will_weight)
-
-    def trust_formula(self, comp_weight: float, will_weight: float):
-        """
-        Decide whether to trust or not by combining competence and willingness using a weighted sum and random threshold.
-        """
-        competence_willingness_sum = self.competence*comp_weight + self.willingness*will_weight
-
-        random_threshold = random.uniform(-1, 1)
-
-        return competence_willingness_sum >= random_threshold
+        competence_willingness_sum = self.competence * comp_weight + self.willingness * will_weight
+        return competence_willingness_sum >= (min_comp * comp_weight) + (min_will * will_weight)

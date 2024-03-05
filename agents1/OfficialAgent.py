@@ -204,6 +204,8 @@ class BaselineAgent(ArtificialBrain):
                             if 'location' not in self._foundVictimLocs[vic].keys():
                                 self._phase = Phase.PLAN_PATH_TO_ROOM
                                 return Idle.__name__, {'duration_in_ticks': 25}
+                        else:
+                            print("Not trusting human to help carry a victim to the drop zone")
                     # Define a previously found victim as target victim
                     if vic in self._foundVictims and vic not in self._todo:
                         self._goalVic = vic
@@ -337,6 +339,7 @@ class BaselineAgent(ArtificialBrain):
                         if self._answered == False and not self._remove and not self._waiting:
                             ## If we don't trust the human, no point in wasting our time by asking for help, we move on
                             if not trustBelief.should_trust(-0.3, -0.4):
+                                print("Not waiting for human to answer because we don't trust them")
                                 # Add area to the to do list
                                 self._tosearch.append(self._door['room_name'])
                                 self._phase = Phase.FIND_NEXT_GOAL
@@ -358,6 +361,7 @@ class BaselineAgent(ArtificialBrain):
                         if self.received_messages_content and self.received_messages_content[-1] == 'Remove' or self._remove:
                             # If we don't trust the person, we continue because we can't remove it on our own
                             if not trustBelief.should_trust(-0.4, -0.4):
+                                print("Continued to next task because we do not trust the human to help remove an obstacle")
                                 # Add area to the to do list
                                 self._tosearch.append(self._door['room_name'])
                                 self._phase = Phase.FIND_NEXT_GOAL
@@ -399,6 +403,7 @@ class BaselineAgent(ArtificialBrain):
                         if self._answered == False and not self._remove and not self._waiting:
                             ## If we don't trust the human, we don't ask for permission to take down tree as we believe the robot to be more capable to make the decision
                             if not trustBelief.should_trust(-0.3, -0.3):
+                                print("Removing tree alone because we don't trust the human")
                                 self._phase = Phase.ENTER_ROOM
                                 self._sendMessage('Removing tree blocking ' + str(self._door['room_name']) + '.',
                                                   'RescueBot')
@@ -437,7 +442,8 @@ class BaselineAgent(ArtificialBrain):
                             self._tosearch.append(self._door['room_name'])
                             self._phase = Phase.FIND_NEXT_GOAL
                             # Decrement willingness because human took too long to answer
-                            # TODO mix maybe trustBelief.decrement_willingness(0.1)
+                            trustBelief.decrement_willingness(0.1)
+                            print("decrementing willingness because time exceeded")
                         # Remain idle untill the human communicates what to do with the identified obstacle
                         else:
                             return None, {}
@@ -448,6 +454,7 @@ class BaselineAgent(ArtificialBrain):
                         if self._answered == False and not self._remove and not self._waiting:
                             # If we don't trust the human, we just remove the stones ourself
                             if not trustBelief.should_trust(-0.3, -0.3):
+                                print(f"Removing stone alone because we don't trust the human")
                                 self._sendMessage('Removing stones blocking ' + str(self._door['room_name']) + '.',
                                                   'RescueBot')
                                 self._phase = Phase.ENTER_ROOM
@@ -477,6 +484,7 @@ class BaselineAgent(ArtificialBrain):
                         if self.received_messages_content and self.received_messages_content[-1] == 'Remove together' or self._remove:
                             # If we don't trust the human's response, we do it ourself
                             if not trustBelief.should_trust(-0.3, -0.3):
+                                print(f"Removing obstacle alone because we don't trust the human")
                                 self._sendMessage('Removing stones blocking ' + str(self._door['room_name']) + '.',
                                                   'RescueBot')
                                 self._phase = Phase.ENTER_ROOM
@@ -499,13 +507,12 @@ class BaselineAgent(ArtificialBrain):
                                                   'RescueBot')
                                 return None, {}
                             elif self.check_exceeded_arrivalTime():
-                                # TODO Check if this works properly
                                 self._waiting = False
                                 # Add area to the to do list
                                 self._tosearch.append(self._door['room_name'])
                                 self._phase = Phase.FIND_NEXT_GOAL
                                 # Decrement willingness as the person said they would come, but they didn't within the time
-                                trustBelief.decrement_willingness(0.05)
+                                trustBelief.decrement_willingness(0.2)
 
                         # If we have waited for a response for too long, we keep going
                         if self._waiting and self.check_exceeded_responseTime() and not self._answered:
@@ -514,7 +521,8 @@ class BaselineAgent(ArtificialBrain):
                             self._tosearch.append(self._door['room_name'])
                             self._phase = Phase.FIND_NEXT_GOAL
                             # Decrement competence because the human was late
-                            # TODO maybe fix trustBelief.decrement_competence(0.1)
+                            trustBelief.decrement_competence(0.1)
+                            print("decrementing competence because time exceeded")
                         # Remain idle until the human communicates what to do with the identified obstacle
                         else:
                             return None, {}
@@ -597,7 +605,8 @@ class BaselineAgent(ArtificialBrain):
                                 # Communicate which victim the agent found and ask the human whether to rescue the victim now or at a later stage
                                 if 'mild' in vic and self._answered == False and not self._waiting:
                                     ## If we don't trust the human, we rescue alone anyways
-                                    if not trustBelief.should_trust(0.0, 0.0):
+                                    if not trustBelief.should_trust(-0.2, -0.2):
+                                        print(f"Rescuing mildly injured victim alone because we don't trust the human")
                                         self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
                                         self._rescue = 'alone'
                                         self._answered = True
@@ -615,14 +624,6 @@ class BaselineAgent(ArtificialBrain):
                                     self.update_responseTime()
                                         
                                 if 'critical' in vic and self._answered == False and not self._waiting:
-                                    ## If human's name is incapable, rescue anyway
-                                    if not trustBelief.should_trust(-0.5, -0.6):
-                                        self._waiting = False
-                                        self._todo.append(self._recentVic)
-                                        self._recentVic = None
-                                        self._phase = Phase.FIND_NEXT_GOAL
-                                        continue
-
                                     self._sendMessage('Found ' + vic + ' in ' + self._door['room_name'] + '. Please decide whether to "Rescue" or "Continue" searching. \n\n \
                                         Important features to consider are: \n explore - areas searched: area ' + str(self._searchedRooms).replace('area','') + ' \n safe - victims rescued: ' + str(self._collectedVictims) + '\n \
                                         afstand - distance between us: ' + self._distanceHuman,'RescueBot')
@@ -654,6 +655,8 @@ class BaselineAgent(ArtificialBrain):
                         self._todo.append(self._recentVic)
                         self._recentVic = None
                         self._phase = Phase.FIND_NEXT_GOAL
+                        print(f"Continue without waiting for human to answer because we don't trust the human")
+                        continue
                     self._rescue = 'together'
                     self._answered = True
                     self._waiting = True
@@ -666,6 +669,7 @@ class BaselineAgent(ArtificialBrain):
                     #If human's name is incapable or lies a lot, pick up anyway
                     # If we don't trust the human we pick them up alone, even if the human says they will help
                     if not trustBelief.should_trust(-0.3, -0.3):
+                        print(f"Rescuing mildly injured victim alone because we don't trust the human")
                         self._sendMessage('Picking up ' + self._recentVic + ' in ' + self._door['room_name'] + '.','RescueBot')
                         self._rescue = 'alone'
                         self._answered = True
@@ -705,11 +709,12 @@ class BaselineAgent(ArtificialBrain):
                     trustBelief.decrement_willingness(0.02)
                 # Remain idle untill the human communicates to the agent what to do with the found victim
                 if self._waiting and self.check_exceeded_responseTime() and not self._answered:
-                    ## TODO maybe decrement competence because the human was too slow with their response
                     self._recentVic = None
                     self._todo.append(self._recentVic)
                     self._phase = Phase.FIND_NEXT_GOAL
                     self._waiting = False
+                    trustBelief.decrement_competence(0.1)
+                    print("decrementing competence because time exceeded")
                 if self.received_messages_content and self._waiting and self.received_messages_content[
                     -1] != 'Rescue' and self.received_messages_content[-1] != 'Continue':
                     return None, {}
@@ -862,6 +867,7 @@ class BaselineAgent(ArtificialBrain):
                     area = 'area ' + msg.split()[-1]
                     # When we don't trust the human, we do not believe them when they say they searched an area
                     if not trustBelief.should_trust(-0.2, -0.2):
+                        print(f"Not trusting human searched area {area}")
                         continue
                     if area not in self._searchedRooms:
                         self._searchedRooms.append(area)
@@ -870,6 +876,7 @@ class BaselineAgent(ArtificialBrain):
                 if msg.startswith("Found:"):
                     ## If the trust values are below a certain threshold, ignore the message
                     if not trustBelief.should_trust(-0.3, -0.3):
+                        print(f"Not trusting human found a victim")
                         continue
                     # Identify which victim and area it concerns
                     if len(msg.split()) == 6:
@@ -897,6 +904,7 @@ class BaselineAgent(ArtificialBrain):
                 if msg.startswith('Collect:'):
                     # If the trust values are below a certain threshold, ignore the message
                     if not trustBelief.should_trust(-0.2, -0.2):
+                        print(f"not trusting human is collecting a victim")
                         continue
                     # Identify which victim and area it concerns
                     if len(msg.split()) == 6:
@@ -924,6 +932,7 @@ class BaselineAgent(ArtificialBrain):
                 if msg.startswith('Remove:'):
                     ## If the trust values are below a certain threshold, ignore the message
                     if not trustBelief.should_trust(-0.3, -0.3):
+                        print("Not trusting human is removing an obstacle")
                         continue
                     # Come over immediately when the agent is not carrying a victim
                     if not self._carrying:
