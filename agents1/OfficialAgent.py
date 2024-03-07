@@ -75,8 +75,6 @@ class BaselineAgent(ArtificialBrain):
         self._moving = False
         self._trustMechanism = trust_mechanism
         self._responseTime = None
-        # Flag representing whether we searched everything but did not complete the game
-        self._is_completed_but_not_found = False
         self._arrivalTime = None
 
     def initialize(self):
@@ -108,6 +106,9 @@ class BaselineAgent(ArtificialBrain):
 
         # Process messages from team members
         self._processMessages(state,  self._teamMembers, self._condition, trustBeliefs)
+        # Reset received messages
+        self._receivedMessages = []
+        self.received_messages = []
 
         # Check whether human is close in distance
         if state[{'is_human_agent': True}]:
@@ -245,11 +246,6 @@ class BaselineAgent(ArtificialBrain):
                     self.received_messages_content = []
                     self._sendMessage('Going to re-search all areas.', 'RescueBot')
                     self._phase = Phase.FIND_NEXT_GOAL
-                    # Decrement trust in human because we searched everything but not all victims are rescued
-                    # We only apply the decrement once
-                    if not self._is_completed_but_not_found:
-                        trustBelief.decrement_trust(0.11)
-                        self._is_completed_but_not_found = True
                 # If there are still areas to search, define which one to search next
                 else:
                     # Identify the closest door when the agent did not search any areas yet
@@ -419,6 +415,7 @@ class BaselineAgent(ArtificialBrain):
                         if self.received_messages_content and self.received_messages_content[-1] == 'Continue' and not self._remove:
                             # Decrement willingness because the human is not willing to help
                             trustBelief.decrement_willingness(0.03)
+
                             self._answered = True
                             self._waiting = False
                             # Add area to the to do list
@@ -473,6 +470,12 @@ class BaselineAgent(ArtificialBrain):
                             # Add area to the to do list
                             self._tosearch.append(self._door['room_name'])
                             self._phase = Phase.FIND_NEXT_GOAL
+
+                            # Decrease willingness because human declined to help
+                            trustBelief.decrement_willingness(0.03)
+                            # Increase competence because human might decline because they can do it alone
+                            trustBelief.increment_competence(0.04)
+
                         # Remove the obstacle alone if the human decides so OR if the human has weak competence or willingness
                         if self.received_messages_content and self.received_messages_content[-1] == 'Remove alone' and not self._remove or (self.received_messages_content and self.received_messages_content[-1] == 'Remove together' and (trustBeliefs[self._humanName].competence < 0 or trustBeliefs[self._humanName].willingness < 0)):
                             self._answered = True
@@ -856,7 +859,6 @@ class BaselineAgent(ArtificialBrain):
         '''
         process incoming messages received from the team members
         '''
-        
         receivedMessages = {}
         # Create a dictionary with a list of received messages from each team member
         for member in teamMembers:
@@ -877,6 +879,12 @@ class BaselineAgent(ArtificialBrain):
                     if not trustBelief.should_trust(-0.2, -0.2):
                         print(f"Not trusting human searched area {area}")
                         continue
+                    # Increment competence if the room has not been searched yet (good human memory)
+                    already_searched = [area[5:] for area in self._searchedRooms]
+                    to_search = msg[8:]
+                    if not to_search in already_searched:
+                        trustBeliefs[self._humanName].increment_competence(0.06)
+
                     if area not in self._searchedRooms:
                         self._searchedRooms.append(area)
 
@@ -1016,19 +1024,19 @@ class BaselineAgent(ArtificialBrain):
         if self._trustMechanism != TrustMechanism.CUSTOM_TRUST:
             return
         # Update the trust value based on for example the received messages
-        # for message in receivedMessages:
-        #     if 'Collect' in message:
-        #         # Increase agent trust in a team member that communicates they will rescue a victim
-        #         trustBeliefs[self._humanName].increment_willingness(0.1)
-        #     elif 'Found' in message:
-        #         # Increase agent trust in a team member that communicates they found a victim
-        #         trustBeliefs[self._humanName].increment_willingness(0.08)
-        #     # Increase agent trust when they communicate searching a room
-        #     elif 'Search' in message:
-        #         trustBeliefs[self._humanName].increment_willingness(0.05)
-        #     elif 'Remove' in message:
-        #         # Increase agent trust when they communicate removing an obstacle
-        #         trustBeliefs[self._humanName].increment_willingness(0.08)
+        for message in receivedMessages:
+            if 'Collect' in message:
+                # Increase agent trust in a team member that communicates they will rescue a victim
+                trustBeliefs[self._humanName].increment_willingness(0.1)
+            elif 'Found' in message:
+                # Increase agent willingness in a team member that communicates they found a victim
+                trustBeliefs[self._humanName].increment_willingness(0.08)
+            elif 'Search' in message:
+                # Increase agent willingness when they communicate searching a room
+                trustBeliefs[self._humanName].increment_willingness(0.05)
+            elif 'Remove' in message:
+                # Increase agent trust when they communicate removing an obstacle
+                trustBeliefs[self._humanName].increment_trust(0.08)
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)

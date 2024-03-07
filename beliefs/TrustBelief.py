@@ -26,7 +26,6 @@ class TrustBelief:
         Increment the willingness by a factor x, correct by alpha and clip to [-1, 1].
         """
         if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
-            print(f"Changed willingness by {x}")
             self.willingness = np.clip([self.willingness + x], -1, 1)[0]
 
     def increment_competence(self, x: float):
@@ -34,7 +33,6 @@ class TrustBelief:
         Increment the competence by a factor x, correct by alpha and clip to [-1, 1].
         """
         if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
-            print(f"Changed competence by {x}")
             self.competence = np.clip([self.competence + x],  -1, 1)[0]
 
     def increment_trust(self, x: float):
