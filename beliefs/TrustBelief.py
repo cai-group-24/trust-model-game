@@ -21,19 +21,25 @@ class TrustBelief:
         self.willingness = willingness
         self.trust_mechanism = trust_mechanism
 
+    def clip(self, x: float) -> float:
+        """
+        Clip value between -1 and 1
+        """
+        return max(-1.00, min(1.00, x))
+
     def increment_willingness(self, x: float):
         """
         Increment the willingness by a factor x, correct by alpha and clip to [-1, 1].
         """
         if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
-            self.willingness = np.clip([self.willingness + x], -1, 1)[0]
+            self.willingness = self.clip(self.willingness + x)
 
     def increment_competence(self, x: float):
         """
         Increment the competence by a factor x, correct by alpha and clip to [-1, 1].
         """
         if self.trust_mechanism == TrustMechanism.CUSTOM_TRUST:
-            self.competence = np.clip([self.competence + x],  -1, 1)[0]
+            self.competence = self.clip(self.competence + x)
 
     def increment_trust(self, x: float):
         """

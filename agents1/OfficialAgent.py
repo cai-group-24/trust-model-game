@@ -76,6 +76,8 @@ class BaselineAgent(ArtificialBrain):
         self._trustMechanism = trust_mechanism
         self._responseTime = None
         self._arrivalTime = None
+        # Current beliefs in human (competence and willingness)
+        self.beliefs = None
 
     def initialize(self):
         # Initialization of the state tracker and navigation algorithm
@@ -103,12 +105,14 @@ class BaselineAgent(ArtificialBrain):
         self._trustBelief(self._teamMembers, trustBeliefs, self._folder, self._receivedMessages)
 
         trustBelief = trustBeliefs[self._humanName]
+        self.beliefs = trustBelief
 
         # Process messages from team members
         self._processMessages(state,  self._teamMembers, self._condition, trustBeliefs)
-        # Reset received messages
-        self._receivedMessages = []
+
+        # Reset messages
         self.received_messages = []
+        self._receivedMessages = []
 
         # Check whether human is close in distance
         if state[{'is_human_agent': True}]:
@@ -435,7 +439,7 @@ class BaselineAgent(ArtificialBrain):
                         # If the robot waited too long, continue
                         if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                             # Decrement willingness and competence because human took too long to answer
-                            trustBelief.decrement_trust(0.1)
+                            trustBelief.decrement_trust(0.05)
                             print("decrementing trust because time exceeded")
 
                             self._waiting = False
@@ -521,7 +525,7 @@ class BaselineAgent(ArtificialBrain):
                         # If we have waited for a response for too long, we keep going
                         if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                             # Decrement competence and willingness because the human was late
-                            trustBelief.decrement_trust(0.1)
+                            trustBelief.decrement_trust(0.05)
                             print("decrementing trust because time exceeded")
 
                             self._waiting = False
@@ -649,7 +653,7 @@ class BaselineAgent(ArtificialBrain):
                     self.received_messages = []
                     self.received_messages_content = []
                     # Decrement willingness because agent is lying about victim locations
-                    trustBeliefs[self._humanName].decrement_trust(0.3)
+                    trustBeliefs[self._humanName].decrement_trust(0.05)
                 # Add the area to the list of searched areas
                 if self._door['room_name'] not in self._searchedRooms:
                     self._searchedRooms.append(self._door['room_name'])
@@ -989,6 +993,10 @@ class BaselineAgent(ArtificialBrain):
         default = 0.0
         trustfile_header = []
         trustfile_contents = []
+
+        # Don't override current trust beliefs
+        if self.beliefs is not None:
+            return { self._humanName: self.beliefs }
         # Check if agent already collaborated with this human before, if yes: load the corresponding trust values, if no: initialize using default trust values
         with open(folder+'/beliefs/allTrustBeliefs.csv') as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar="'")
@@ -1005,9 +1013,9 @@ class BaselineAgent(ArtificialBrain):
                 # Initialize default trust values
                 if row and row[0] != self._humanName:
                     if self._trustMechanism == TrustMechanism.NEVER_TRUST:
-                        default = -1
+                        default = -1.0
                     elif self._trustMechanism == TrustMechanism.ALWAYS_TRUST:
-                        default = 1
+                        default = 1.0
                     elif self._trustMechanism == TrustMechanism.RANDOM_TRUST:
                         default = random.uniform(-1, 1)
 
