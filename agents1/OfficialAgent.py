@@ -805,7 +805,7 @@ class BaselineAgent(ArtificialBrain):
                     self._phase = Phase.FIND_NEXT_GOAL
 
                     # Increment willingness and competence because the human is willing and capable of picking it up together
-                    trustBelief.increment_trust(0.08)
+                    trustBelief.increment_willingness(0.08)
                 # When rescuing mildly injured victims alone, pick the victim up and plan the path to the drop zone
                 if 'mild' in self._goalVic and self._rescue=='alone':
                     self._phase = Phase.PLAN_PATH_TO_DROPPOINT
@@ -1044,7 +1044,7 @@ class BaselineAgent(ArtificialBrain):
                 trustBeliefs[self._humanName].increment_willingness(0.05)
             elif 'Remove' in message:
                 # Increase agent trust when they communicate removing an obstacle
-                trustBeliefs[self._humanName].increment_trust(0.08)
+                trustBeliefs[self._humanName].increment_willingness(0.08)
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
