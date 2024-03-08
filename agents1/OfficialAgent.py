@@ -253,7 +253,7 @@ class BaselineAgent(ArtificialBrain):
                     self.received_messages = []
                     self.received_messages_content = []
                     value_to_decrease = 0.2
-                    self._sendMessage('Going to re-search all areas. Willingness will decrease by' + str + 'as a consequence.', 'RescueBot')
+                    self._sendMessage('Going to re-search all areas. Willingness will decrease by' + str(value_to_decrease) + 'as a consequence.', 'RescueBot')
                     self._phase = Phase.FIND_NEXT_GOAL
                     trustBelief.decrement_willingness(0.2)
                 # If there are still areas to search, define which one to search next
@@ -619,9 +619,9 @@ class BaselineAgent(ArtificialBrain):
                                     self._phase = Phase.FIND_NEXT_GOAL
 
                             # Identify injured victim in the area
-                            if 'healthy' not in vic and vic not in self._foundVictims and self._door['room_name'] in self._searchedRooms :
+                            if 'healthy' not in vic and vic not in self._foundVictims and self._door['room_name'] in self._visitedOnce:
                                 value_to_decrease = 0.15
-                                self._sendMessage(f"Found" + vic + "in room " + self._door['room_name'] + " although that room was searched. WHAT WAS THE REASON???? Decrementint trust by " + str(value_to_decrease), 'RescueBot')
+                                self._sendMessage(f"Found" + vic + "in room " + self._door['room_name'] + " although that room was searched before. WHAT WAS THE REASON???? Decrementint trust by " + str(value_to_decrease), 'RescueBot')
                                 self._collectedVictims.remove(vic)
                                 trustBelief.decrement_willingness(0.3)
                             if 'healthy' not in vic and vic in (self._collectedVictims):
@@ -678,7 +678,7 @@ class BaselineAgent(ArtificialBrain):
                 # Add the area to the list of searched areas
                 if self._door['room_name'] not in self._searchedRooms:
                     self._searchedRooms.append(self._door['room_name'])
-                    self._visited_once.append(self._door['room_name'])
+                    self._visitedOnce.append(self._door['room_name'])
                 # Make a plan to rescue a found critically injured victim if the human decides so
                 if self.received_messages_content and self.received_messages_content[-1] == 'Rescue' and 'critical' in self._recentVic:
                     # If we can't trust the person to tell the truth, we continue instantly instead of wasting time waiting for them to come
@@ -995,6 +995,7 @@ class BaselineAgent(ArtificialBrain):
                         self._doormat = state.get_room(area)[-1]['doormat']
                         if area in self._searchedRooms:
                             self._searchedRooms.remove(area)
+                            self._visitedOnce.remove(area)
                         # Clear received messages (bug fix)
                         self.received_messages = []
                         self.received_messages_content = []
