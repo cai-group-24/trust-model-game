@@ -1054,6 +1054,7 @@ class BaselineAgent(ArtificialBrain):
         # Check if agent already collaborated with this human before, if yes: load the corresponding trust values, if no: initialize using default trust values
         with open(folder+'/beliefs/allTrustBeliefs.csv') as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar="'")
+            # For each human keep track of the tick that the previous game ended on as new start tick
             for row in reader:
                 if trustfile_header==[]:
                     trustfile_header=row
@@ -1065,8 +1066,8 @@ class BaselineAgent(ArtificialBrain):
                     willingness = float(row[2])
                     ticks_played = float(row[3])
                     # Load ticks from previous run
-                    self.start_tick = ticks_played
-                    trustBeliefs[name] = TrustBelief(competence, willingness, trust_mechanism, ticks_played)
+                    self.start_tick = max(ticks_played, self.start_tick)  # We take max because there might be multiple games with the same character
+                    trustBeliefs[name] = TrustBelief(competence, willingness, trust_mechanism, self.start_tick)
                 # Initialize default trust values
                 if row and row[0] != self._humanName:
                     if self._trustMechanism == TrustMechanism.NEVER_TRUST:
