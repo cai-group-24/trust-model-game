@@ -78,6 +78,8 @@ class BaselineAgent(ArtificialBrain):
         self._arrivalTime = None
         # Current beliefs in human (competence and willingness)
         self.beliefs = None
+        # Tick that the game starts at (loaded in _loaddTrustBelief from previous game if character already used)
+        self.start_tick = 0
 
     def initialize(self):
         # Initialization of the state tracker and navigation algorithm
@@ -1009,7 +1011,10 @@ class BaselineAgent(ArtificialBrain):
                     name = row[0]
                     competence = float(row[1])
                     willingness = float(row[2])
-                    trustBeliefs[name] = TrustBelief(competence, willingness, trust_mechanism)
+                    ticks_played = float(row[3])
+                    # Load ticks from previous run
+                    self.start_tick = ticks_played
+                    trustBeliefs[name] = TrustBelief(competence, willingness, trust_mechanism, ticks_played)
                 # Initialize default trust values
                 if row and row[0] != self._humanName:
                     if self._trustMechanism == TrustMechanism.NEVER_TRUST:
@@ -1021,7 +1026,8 @@ class BaselineAgent(ArtificialBrain):
 
                     competence = default
                     willingness = default
-                    trustBeliefs[self._humanName] = TrustBelief(competence, willingness, trust_mechanism)
+                    ticks_played = 0
+                    trustBeliefs[self._humanName] = TrustBelief(competence, willingness, trust_mechanism, ticks_played)
         return trustBeliefs
 
     def _trustBelief(self, members, trustBeliefs, folder, receivedMessages):
@@ -1031,6 +1037,10 @@ class BaselineAgent(ArtificialBrain):
         ## If we are running one of the baselines, we never want to update our trust values
         if self._trustMechanism != TrustMechanism.CUSTOM_TRUST:
             return
+
+        # Update the current tick count (used in confidence calculations)
+        trustBeliefs[self._humanName].ticks_played = self.start_tick + self.state['World']['nr_ticks']
+
         # Update the trust value based on for example the received messages
         for message in receivedMessages:
             if 'Collect' in message:
@@ -1048,9 +1058,9 @@ class BaselineAgent(ArtificialBrain):
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writerow(['name', 'competence', 'willingness'])
+            csv_writer.writerow(['name', 'competence', 'willingness', 'ticks_played'])
             trust_belief = trustBeliefs[self._humanName]
-            csv_writer.writerow([self._humanName, trust_belief.competence, trust_belief.willingness])
+            csv_writer.writerow([self._humanName, trust_belief.competence, trust_belief.willingness, trust_belief.ticks_played])
 
         return trustBeliefs
 
