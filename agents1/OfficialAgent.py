@@ -14,7 +14,7 @@ from beliefs.TrustBelief import TrustBelief, TrustMechanism
 from brains1.ArtificialBrain import ArtificialBrain
 
 ## Time the human has to respond before the robot starts another task
-RESPONSE_TIME = 7
+RESPONSE_TIME = 10
 ## Time the human has to arrive once they've said that they will
 ARRIVAL_TIME = 20
 
@@ -393,6 +393,9 @@ class BaselineAgent(ArtificialBrain):
                                 self._phase = Phase.FIND_NEXT_GOAL
                         # If the robot waited too long then will proceed on its own
                         if self._waiting and self.check_exceeded_responseTime() and not self._answered:
+                            # Decrement willingness and competence because human took too long to answer
+                            trustBelief.decrement_trust(0.1)
+
                             self._waiting = False
                             # Add area to the to do list
                             self._tosearch.append(self._door['room_name'])
@@ -443,7 +446,7 @@ class BaselineAgent(ArtificialBrain):
                         # If the robot waited too long, continue
                         if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                             # Decrement willingness and competence because human took too long to answer
-                            trustBelief.decrement_trust(0.05)
+                            trustBelief.decrement_trust(0.1)
                             print("decrementing trust because time exceeded")
 
                             self._waiting = False
@@ -480,9 +483,9 @@ class BaselineAgent(ArtificialBrain):
                             self._phase = Phase.FIND_NEXT_GOAL
 
                             # Decrease willingness because human declined to help
-                            trustBelief.decrement_willingness(0.03)
+                            trustBelief.decrement_willingness(0.09)
                             # Increase competence because human might decline because they can do it alone
-                            trustBelief.increment_competence(0.04)
+                            trustBelief.increment_competence(0.09)
 
                         # Remove the obstacle alone if the human decides so OR if the human has weak competence or willingness
                         if self.received_messages_content and self.received_messages_content[-1] == 'Remove alone' and not self._remove or (self.received_messages_content and self.received_messages_content[-1] == 'Remove together' and (trustBeliefs[self._humanName].competence < 0 or trustBeliefs[self._humanName].willingness < 0)):
@@ -529,7 +532,7 @@ class BaselineAgent(ArtificialBrain):
                         # If we have waited for a response for too long, we keep going
                         if self._waiting and self.check_exceeded_responseTime() and not self._answered:
                             # Decrement competence and willingness because the human was late
-                            trustBelief.decrement_trust(0.05)
+                            trustBelief.decrement_trust(0.1)
                             print("decrementing trust because time exceeded")
 
                             self._waiting = False
@@ -902,8 +905,10 @@ class BaselineAgent(ArtificialBrain):
                     already_searched = [area[5:] for area in self._searchedRooms]
                     to_search = msg[8:]
                     if not to_search in already_searched:
-                        trustBeliefs[self._humanName].increment_competence(0.06)
-
+                        trustBeliefs[self._humanName].increment_competence(0.1)
+                    # Decrement competence and willingness if room has been searched
+                    else:
+                        trustBeliefs[self._humanName].decrement_trust(0.08)
                     if area not in self._searchedRooms:
                         self._searchedRooms.append(area)
 
@@ -924,8 +929,14 @@ class BaselineAgent(ArtificialBrain):
                         self._searchedRooms.append(loc)
                     # Add the victim and its location to memory
                     if foundVic not in self._foundVictims:
+                        # Increment competence if the victim was not already found
+                        trustBelief.increment_competence(0.05)
+
                         self._foundVictims.append(foundVic)
                         self._foundVictimLocs[foundVic] = {'room': loc}
+                    else:
+                        # Decrement competence and willingness if victim was already found
+                        trustBelief.decrement_trust(0.05)
                     if foundVic in self._foundVictims and self._foundVictimLocs[foundVic]['room'] != loc:
                         self._foundVictimLocs[foundVic] = {'room': loc}
                     # Decide to help the human carry a found victim when the human's condition is 'weak'
@@ -1058,18 +1069,17 @@ class BaselineAgent(ArtificialBrain):
         for message in receivedMessages:
             if 'Collect' in message:
                 # Increase agent trust in a team member that communicates they will rescue a victim
-                trustBeliefs[self._humanName].increment_willingness(0.05)
+                trustBeliefs[self._humanName].increment_willingness(0.02)
             elif 'Found' in message:
                 # Increase agent willingness in a team member that communicates they found a victim
-                trustBeliefs[self._humanName].increment_willingness(0.05)
+                trustBeliefs[self._humanName].increment_willingness(0.02)
             elif 'Search' in message:
                 # Increase agent willingness when they communicate searching a room
-                # You could just spam all rooms and really increase your willingness. I decreased this as a consequence.
-                trustBeliefs[self._humanName].increment_willingness(0.025)
+                trustBeliefs[self._humanName].increment_willingness(0.02)
             elif 'Remove' in message:
                 # Increase agent trust when they communicate removing an obstacle
-                # You could just spam all rooms and really increase your willingness. I decreased this as a consequence.
-                trustBeliefs[self._humanName].increment_willingness(0.01)
+                trustBeliefs[self._humanName].increment_willingness(0.02)
+
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
