@@ -352,7 +352,7 @@ class BaselineAgent(ArtificialBrain):
                         self._sendMessage("Found no obstacle although you claimed it was there. You were the 99 people in room number: " + str(self._door['room_name']) + ". Decrementing willingness by " + str(value_to_decrease) , 'RescueBot')
                         trustBelief.decrement_willingness(0.2)
 
-                    # This line of code took 2 (two) hours to figure out. I hate ticks. I'm a clown. Good night. Do not remove.
+                    # This line of code took 2 (two) hours to figure out. I hate ticks. I'm a clown. Good night. Do not remove
                     if  self._door['room_name'] in self._allegedlyHasObject:
                         self._allegedlyHasObject.remove(self._door['room_name'])
 
