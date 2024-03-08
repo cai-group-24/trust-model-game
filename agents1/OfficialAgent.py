@@ -80,6 +80,8 @@ class BaselineAgent(ArtificialBrain):
         self.beliefs = None
         # Tick that the game starts at (loaded in _loaddTrustBelief from previous game if character already used)
         self.start_tick = 0
+        # Room has been visited once already
+        self._visitedOnce = []
 
     def initialize(self):
         # Initialization of the state tracker and navigation algorithm
@@ -609,6 +611,7 @@ class BaselineAgent(ArtificialBrain):
                                     # Add the area to the list with searched areas
                                     if self._door['room_name'] not in self._searchedRooms:
                                         self._searchedRooms.append(self._door['room_name'])
+                                        self._visitedOnce.append(self._door['room_name'])
                                     # Do not continue searching the rest of the area but start planning to rescue the victim
                                     self._phase = Phase.FIND_NEXT_GOAL
 
@@ -662,6 +665,7 @@ class BaselineAgent(ArtificialBrain):
                 # Add the area to the list of searched areas
                 if self._door['room_name'] not in self._searchedRooms:
                     self._searchedRooms.append(self._door['room_name'])
+                    self._visited_once.append(self._door['room_name'])
                 # Make a plan to rescue a found critically injured victim if the human decides so
                 if self.received_messages_content and self.received_messages_content[-1] == 'Rescue' and 'critical' in self._recentVic:
                     # If we can't trust the person to tell the truth, we continue instantly instead of wasting time waiting for them to come
@@ -898,6 +902,7 @@ class BaselineAgent(ArtificialBrain):
                         trustBeliefs[self._humanName].decrement_trust(0.08)
                     if area not in self._searchedRooms:
                         self._searchedRooms.append(area)
+                        self._visitedOnce.append(area)
 
                 # If a received message involves team members finding victims, add these victims and their locations to memory
                 if msg.startswith("Found:"):
@@ -914,6 +919,7 @@ class BaselineAgent(ArtificialBrain):
                     # Add the area to the memory of searched areas
                     if loc not in self._searchedRooms:
                         self._searchedRooms.append(loc)
+                        self._visitedOnce.append(loc)
                     # Add the victim and its location to memory
                     if foundVic not in self._foundVictims:
                         # Increment competence if the victim was not already found
@@ -948,6 +954,7 @@ class BaselineAgent(ArtificialBrain):
                     # Add the area to the memory of searched areas
                     if loc not in self._searchedRooms:
                         self._searchedRooms.append(loc)
+                        self._visitedOnce.append(loc)
                     # Add the victim and location to the memory of found victims
                     if collectVic not in self._foundVictims:
                         self._foundVictims.append(collectVic)
