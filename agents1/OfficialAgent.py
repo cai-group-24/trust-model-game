@@ -1,5 +1,7 @@
 import csv
 import enum
+import glob
+import os
 import random
 import time
 
@@ -1037,6 +1039,37 @@ class BaselineAgent(ArtificialBrain):
             if mssgs and mssgs[-1].split()[-1] in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
                 self._humanLoc = int(mssgs[-1].split()[-1])
 
+    def get_ticks_played(self) -> int:
+        """
+        Get the amount of ticks played with the human from action files.
+        """
+        start_ticks = 0
+
+        # Find path to each action log file
+        logs_dir = os.path.join(self._folder, 'logs')
+        action_file_dirs = [os.path.join(logs_dir, game_dir + '/world_1') for game_dir in os.listdir(logs_dir)]
+        action_file_paths = [glob.glob(os.path.join(action_file_dir, 'actions*'))[0] for action_file_dir in action_file_dirs]
+
+        # For each action file, if the name is the same as the current human, we add the ticks played to the total amount for that human
+        for action_file_path in action_file_paths:
+            curr_file_ticks = 0
+            with open(action_file_path) as csvfile:
+                reader = csv.reader(csvfile, delimiter=';', quotechar="'")
+                action_header = []
+                for row in reader:
+                    if action_header == []:
+                        action_header = row
+                        continue
+                    # Get the name of the agent
+                    human_name = action_header[4].replace('_action', '')
+
+                    if human_name == self._humanName:
+                        ticks = int(row[7])
+                        # In the end we take the maximum tick value from this file
+                        curr_file_ticks = max(curr_file_ticks, ticks)
+            start_ticks += curr_file_ticks
+        return start_ticks
+
     def _loadBelief(self, members, folder, trust_mechanism):
         '''
         Loads trust belief values if agent already collaborated with human before, otherwise trust belief values are initialized using default values.
@@ -1051,6 +1084,10 @@ class BaselineAgent(ArtificialBrain):
         # Don't override current trust beliefs
         if self.beliefs is not None:
             return { self._humanName: self.beliefs }
+
+        # Load ticks from previous runs
+        self.start_tick = self.get_ticks_played()
+
         # Check if agent already collaborated with this human before, if yes: load the corresponding trust values, if no: initialize using default trust values
         with open(folder+'/beliefs/allTrustBeliefs.csv') as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar="'")
@@ -1064,9 +1101,6 @@ class BaselineAgent(ArtificialBrain):
                     name = row[0]
                     competence = float(row[1])
                     willingness = float(row[2])
-                    ticks_played = float(row[3])
-                    # Load ticks from previous run
-                    self.start_tick = max(ticks_played, self.start_tick)  # We take max because there might be multiple games with the same character
                     trustBeliefs[name] = TrustBelief(competence, willingness, trust_mechanism, self.start_tick)
                 # Initialize default trust values
                 if row and row[0] != self._humanName:
@@ -1112,9 +1146,9 @@ class BaselineAgent(ArtificialBrain):
         # Save current trust belief values so we can later use and retrieve them to add to a csv file with all the logged trust belief values
         with open(folder + '/beliefs/currentTrustBelief.csv', mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writerow(['name', 'competence', 'willingness', 'ticks_played'])
+            csv_writer.writerow(['name', 'competence', 'willingness'])
             trust_belief = trustBeliefs[self._humanName]
-            csv_writer.writerow([self._humanName, trust_belief.competence, trust_belief.willingness, trust_belief.ticks_played])
+            csv_writer.writerow([self._humanName, trust_belief.competence, trust_belief.willingness])
 
         return trustBeliefs
 
