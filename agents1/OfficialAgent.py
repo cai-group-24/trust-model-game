@@ -1072,13 +1072,13 @@ class BaselineAgent(ArtificialBrain):
                     trustfile_header=row
                     continue
                 # Retrieve trust values, only do this if we are running our implementation and not the baselines
-                if row and row[0]==self._humanName:
+                if row and row[0] == self._humanName and trust_mechanism == TrustMechanism.CUSTOM_TRUST:
                     name = row[0]
                     competence = float(row[1])
                     willingness = float(row[2])
                     trustBeliefs[name] = TrustBelief(competence, willingness, trust_mechanism, self.start_tick)
                 # Initialize default trust values
-                if row and row[0] != self._humanName:
+                if (row and row[0] != self._humanName) or trust_mechanism != TrustMechanism.CUSTOM_TRUST:
                     if self._trustMechanism == TrustMechanism.NEVER_TRUST:
                         default = -1.0
                     elif self._trustMechanism == TrustMechanism.ALWAYS_TRUST:
@@ -1096,10 +1096,6 @@ class BaselineAgent(ArtificialBrain):
         '''
         Baseline implementation of a trust belief. Creates a dictionary with trust belief scores for each team member, for example based on the received messages.
         '''
-        ## If we are running one of the baselines, we never want to update our trust values
-        if self._trustMechanism != TrustMechanism.CUSTOM_TRUST:
-            return
-
         # Update the current tick count (used in confidence calculations)
         trustBeliefs[self._humanName].ticks_played = self.start_tick + self.state['World']['nr_ticks']
 
