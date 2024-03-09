@@ -676,7 +676,7 @@ class BaselineAgent(ArtificialBrain):
                     # Decrement willingness because agent is lying about victim locations
                     trustBeliefs[self._humanName].decrement_willingness(0.3)
                     # Decrement competence because human might also just not remember where victims are
-                    trustBelief[self._humanName].decrement_competence(0.05)
+                    trustBeliefs[self._humanName].decrement_competence(0.05)
                 # Add the area to the list of searched areas
                 if self._door['room_name'] not in self._searchedRooms:
                     self._searchedRooms.append(self._door['room_name'])
