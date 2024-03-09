@@ -576,9 +576,7 @@ class BaselineAgent(ArtificialBrain):
                 if self._goalVic in self._collectedVictims:
                     self._currentDoor = None
                     self._phase = Phase.FIND_NEXT_GOAL
-                    # Increment trust because human rescued a target victim
-                    # Commented this because we already increment trust for rescuing once. Consequence
-                    ##trustBelief.increment_trust(0.06)
+
                 # If the target victim is found in a different area, start moving there
                 if self._goalVic in self._foundVictims and self._door['room_name'] != self._foundVictimLocs[self._goalVic]['room']:
                     self._currentDoor = None
