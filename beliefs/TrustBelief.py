@@ -2,11 +2,17 @@ import numpy as np
 import random
 import enum
 
+
 class TrustMechanism(enum.Enum):
     NEVER_TRUST = 1,
     ALWAYS_TRUST = 2,
     RANDOM_TRUST = 3,
     CUSTOM_TRUST = 4
+
+
+# Amount of decimals we use for competence and willingness rounding (cleaner memory files)
+TRUST_DECIMALS = 5
+
 
 class TrustBelief:
     """
@@ -28,9 +34,9 @@ class TrustBelief:
 
     def clip(self, x: float) -> float:
         """
-        Clip value between -1 and 1
+        Clip value between -1 and 1 and round decimals to certain amount
         """
-        return max(-1.00, min(1.00, x))
+        return np.round(max(-1.00, min(1.00, x)), decimals=TRUST_DECIMALS)
 
     def increment_willingness(self, x: float):
         """
@@ -101,14 +107,14 @@ class TrustBelief:
         Calculate the confidence (number between 0-1) based on the amount of ticks that have been played with this human.
         The longer a robot plays with a human, the more confident the robot is in the trust it has in that human.
         """
-        seconds = self.ticks_played/10.0
+        seconds = self.ticks_played / 10.0
         # We assume 100% confidence after 40 minutes of playing
         MAX_CONFIDENCE_SECONDS = 40 * 60
 
         # Use function which starts around 0.05 and approaches 1 near the max confidence threshold
         # Function was found by experimenting in a graphing calculator (https://www.desmos.com/calculator)
         def confidence_func(x: float):
-            return -np.exp([-3.0/MAX_CONFIDENCE_SECONDS * x])[0] + 1.05
+            return -np.exp([-3.0 / MAX_CONFIDENCE_SECONDS * x])[0] + 1.05
 
         # Clip formula output between 0 and 0.9 (max 90% confidence)
         # divide by 2 for a slower start
