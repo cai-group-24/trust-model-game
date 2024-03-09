@@ -31,8 +31,6 @@ def output_logger(fld):
             res = {action_header[i]: row[i] for i in range(len(action_header))}
             action_contents.append(res)
 
-    # Get tick number at which the game finished from current trust beliefs
-    ticks = {}
     with open(fld+'/beliefs/currentTrustBelief.csv') as csvfile:
         reader = csv.reader(csvfile, delimiter=';', quotechar="'")
         for row in reader:
@@ -42,7 +40,6 @@ def output_logger(fld):
             if row:
                 res = {trustfile_header[i] : row[i] for i in range(len(trustfile_header))}
                 trustfile_contents.append(res)
-                ticks[row[0]] = row[3]
     # Retrieve the stored trust belief values
     name = trustfile_contents[-1]['name']
     competence = trustfile_contents[-1]['competence']
@@ -59,4 +56,4 @@ def output_logger(fld):
         csv_writer.writerow([completeness,score,no_ticks,len(unique_agent_actions),len(unique_human_actions)])
     with open(fld + '/beliefs/allTrustBeliefs.csv', mode='a+') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow([name,competence,willingness,ticks[name]])
+        csv_writer.writerow([name,competence,willingness])

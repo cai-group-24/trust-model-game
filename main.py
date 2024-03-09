@@ -26,7 +26,6 @@ if __name__ == "__main__":
             if choice4 == 'always':
                 builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld, trust_mechanism=TrustMechanism.ALWAYS_TRUST)
             elif choice4 == 'never':
-                print("on god no capping")
                 builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld, trust_mechanism=TrustMechanism.NEVER_TRUST)
             elif choice4 == 'random':
                 builder = create_builder(task_type=choice1, condition=choice3, name=choice2, folder=fld, trust_mechanism=TrustMechanism.RANDOM_TRUST)
